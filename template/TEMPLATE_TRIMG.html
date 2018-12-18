@@ -1,0 +1,108 @@
+<!doctype html>
+<html><head><title>#PROJECT: QC #PROG</title>
+<script type="text/javascript" language="javascript" src="./html/lytebox.js"></script>
+<script type="text/javascript" language="javascript" src="./html/jquery-1.12.0.js"></script>
+<script type="text/javascript" language="javascript" src="./html/jquery.dataTables.min.js"></script>
+<script type="text/javascript" language="javascript" src="./html/dataTables.colReorder.min.js"></script>
+<script type="text/javascript" language="javascript" src="./html/amcharts.js"></script>
+<script type="text/javascript" language="javascript" src="./html/xy.js" type="text/javascript"></script>
+<script type="text/javascript" language="javascript" src="./html/serial.js" type="text/javascript"></script>
+<link rel="stylesheet" type="text/css" href="./html/lytebox.css">
+<link rel="stylesheet" type="text/css" href="./html/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="./html/style.css">
+<script>
+
+    var chart;
+    #DATA
+    AmCharts.ready(function () {
+        // SERIALL CHART
+        chart = new AmCharts.AmSerialChart();
+        chart.dataProvider = chartData;
+        chart.categoryField = "sample_id";
+        chart.plotAreaBorderAlpha = 0.2;
+        chart.rotate = false;
+        // AXES
+        // Category
+        var categoryAxis = chart.categoryAxis;
+        categoryAxis.gridAlpha = 0.1;
+        categoryAxis.labelRotation = 90;
+        categoryAxis.axisAlpha = 0;
+        categoryAxis.gridPosition = "start";
+        // value
+        var valueAxis = new AmCharts.ValueAxis();
+        valueAxis.stackType = "regular";
+        valueAxis.gridAlpha = 0.1;
+        valueAxis.axisAlpha = 0;
+        valueAxis.title = "#LABEL";
+        chart.addValueAxis(valueAxis);
+    	var valueAxis2 = new AmCharts.ValueAxis();
+        valueAxis2.position = "left";
+        valueAxis2.stackType = "none";
+        valueAxis2.gridAlpha = 0.1;
+        valueAxis2.axisAlpha = 0;
+	    valueAxis2.id = "axis2";
+        valueAxis2.title = "Percentage (%)";
+        chart.addValueAxis(valueAxis2);
+        // GRAPHS
+    var graph = new AmCharts.AmGraph(); graph.valueAxis = "axis2"; graph.title = "Reads with adapters"; graph.valueField = "Reads with adapters"; graph.type = "line"; graph.fillAlphas = 0;graph.lineAlpha = 1; graph.useLineColorForBulletBorder = true;graph.bullet = "round";graph.bulletBorderAlpha = 1;graph.bulletColor = "#00008B";graph.lineColor = "#00008B";graph.lineThickness = 2;graph.bulletSize = 7;graph.balloonText = "<span style='font-size:13px;'>[[title]] in [[category]]:<b>[[value]]</b></span>";chart.addGraph(graph);
+	var graph = new AmCharts.AmGraph(); graph.valueAxis = "axis2"; graph.title = "Reads passing filters"; graph.valueField = "Reads passing filters"; graph.type = "line"; graph.fillAlphas = 0;graph.lineAlpha = 1; graph.useLineColorForBulletBorder = true;graph.bullet = "round";graph.bulletBorderAlpha = 1;graph.bulletColor = "#801616";graph.lineColor = "#801616";graph.lineThickness = 2;graph.bulletSize = 7;graph.balloonText = "<span style='font-size:13px;'>[[title]] in [[category]]:<b>[[value]]</b></span>";chart.addGraph(graph);
+	var graph = new AmCharts.AmGraph(); graph.valueAxis = "axis2"; graph.title = "Quality-trimmed basepairs"; graph.valueField = "Quality-trimmed basepairs"; graph.type = "line"; graph.fillAlphas = 0;graph.lineAlpha = 1; graph.useLineColorForBulletBorder = true;graph.bullet = "round";graph.bulletBorderAlpha = 1;graph.bulletColor = "#FF0000";graph.lineColor = "#FF0000";graph.lineThickness = 2;graph.bulletSize = 7;graph.balloonText = "<span style='font-size:13px;'>[[title]] in [[category]]:<b>[[value]]</b></span>";chart.addGraph(graph);
+	var graph = new AmCharts.AmGraph(); graph.valueAxis = "axis2"; graph.title = "Basepairs passing filters"; graph.valueField = "Basepairs passing filters"; graph.type = "line"; graph.fillAlphas = 0;graph.lineAlpha = 1; graph.useLineColorForBulletBorder = true;graph.bullet = "round";graph.bulletBorderAlpha = 1;graph.bulletColor = "#00FF00";graph.lineColor = "#00FF00";graph.lineThickness = 2;graph.bulletSize = 7;graph.balloonText = "<span style='font-size:13px;'>[[title]] in [[category]]:<b>[[value]]</b></span>";chart.addGraph(graph);
+        // LEGEND
+        var legend = new AmCharts.AmLegend();
+        legend.position = "right";
+        legend.borderAlpha = 0.3;
+        legend.horizontalGap = 2;
+        legend.switchType = "v";
+        chart.addLegend(legend);
+        chart.creditsPosition = "top-right";
+        chart.depth3D = 20;
+        chart.angle = 30;
+        // WRITE
+        chart.write("chartdiv");
+    });
+    // Make chart 2D/3D
+    function setDepth() {
+    	if (document.getElementById("rb2").checked) {
+            chart.depth3D = 20;
+            chart.angle = 30;
+        } else {
+            chart.depth3D = 0;
+            chart.angle = 0;
+        }
+        chart.validateNow();
+    }
+
+</script>
+<script type="text/javascript" class="init">
+        $(document).ready(function() {
+                $('#DT').DataTable({
+                        colReorder: true,
+                        'scrollY': '400px',
+                        'scrollCollapse': true,
+                        'bPaginate': false,
+                        'bAutoWidth': true,
+                        'sScrollX': '800px'});
+        });
+</script>
+</head>
+<body>
+<title>RNA-Seq pipeline (aRNApipe)</title>
+<h1>RNA-Seq pipeline (aRNApipe)</h1>
+<h2>Project: #PROJECT</h2>
+<div id="menu">
+#LATMENU
+</div>
+<div id="content">
+<h1><hr>#PROG: ADAPTOR TRIMMING<hr></h1>
+    <center>
+<div id="chartdiv" style="width: 100%; height: 300px;"></div>
+<div style="margin-left:40px;">
+<input type="radio" name="group" id="rb1" onclick="setDepth()">2D
+<input type="radio" checked="true" name="group" id="rb2" onclick="setDepth()">3D
+</div><br>
+#TABLE
+</center>
+</div>
+</body>
+</html>
