@@ -13,11 +13,11 @@ if (alg != 'kallisto'){
   snames2 <- as.character(read.table(paste(path, alg, "_counts.txt", sep=""), sep = "\t", header = F, stringsAsFactors = F, nrows = 1))
   labs <- c("RPKM","COUNTS")
 } else{
-  rpkms  <- read.table(paste(path, alg, "_tpm.txt", sep=""), sep = "\t", header = T, stringsAsFactors = F, na.strings = '-nan')
+  rpkms  <- read.table(paste(path, "_tpm.txt", sep=""), sep = "\t", header = T, stringsAsFactors = F, na.strings = '-nan')
   rpkms <- rpkms[,2:ncol(rpkms)]
-  snames1 <- as.character(read.table(paste(path, alg, "_tpm.txt", sep=""), sep = "\t", header = F, stringsAsFactors = F, nrows = 1))
+  snames1 <- as.character(read.table(paste(path, "_tpm.txt", sep=""), sep = "\t", header = F, stringsAsFactors = F, nrows = 1))
   snames1 <- snames1[2:length(snames1)]
-  counts <- read.table(paste(path, alg, "_est_counts.txt", sep=""), sep = "\t", header = T, stringsAsFactors = F)
+  counts <- read.table(paste(path, "_est_counts.txt", sep=""), sep = "\t", header = T, stringsAsFactors = F)
   counts <- counts[,2:ncol(counts)]
   snames2 <- as.character(read.table(paste(path, alg, "_est_counts.txt", sep=""), sep = "\t", header = F, stringsAsFactors = F, nrows = 1))
   snames2 <- snames2[2:length(snames2)]
@@ -32,6 +32,12 @@ for (i in 1:2){
   if (i == 2) {G <- counts[inc,];lab <- labs[2]; snames <- snames2[2:length(snames2)]}
   if (ncol(G)>2){ # at least two samples available
     lcounts  <- log2(G[, 2:ncol(G)]+1)
+    ### get rid off NA values
+    inc <- which(rowSums(is.na(lcounts)) == (ncol(G)-1))
+    if(length(inc)>0){
+      G <- G[-inc,]
+      lcounts <- lcounts[-inc,]
+    }
     s_ok <- (which((colSums(G[, 2:ncol(G)]) > 10000)&(colSums(is.na(lcounts)) == 0))) # remove samples with NA (not processed yet)
     if (length(s_ok) > 1){
       ## QUANTILES
@@ -39,7 +45,7 @@ for (i in 1:2){
       colnames(tp) <- paste("Quantile", colnames(tp), sep = "_")
       ## STANDARDIZED PCA
       pca      <- prcomp(t(lcounts[, s_ok]))
-      for (i in 1:4) pca$x[,i] <- pca$x[,i]/sqrt(var(pca$x[,i], na.rm = T))
+      for (k in 1:4) pca$x[,k] <- pca$x[,k]/sqrt(var(pca$x[,k], na.rm = T))
       scores <- round(pca$x[,1:4],4)
       ## CREATES OUTPUT REQUIRED BY JAVASCRIPT PLUGIN
       ng1 <- rep(2,nrow(scores))
@@ -57,7 +63,7 @@ for (i in 1:2){
       colnames(N) <- paste(lab, colnames(N), sep=" ")
     }
   }
-  NT <- cbind(NT, N)
+  NT <- cbind(NT,N)
 }
 NT <- cbind(snames[s_ok], NT)
 write.table(NT, file = paste(path, alg, "_pca", ".txt", sep=""), quote = F, row.names = F, sep = "\t")
