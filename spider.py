@@ -312,31 +312,20 @@ except Exception as ex:
 # STAR & HTSEQ STATS ON COUNTS/RPKMS
 #########################################################################
 try:
-    print "LENGTH OF SAMPLES GREATER THAN 1"
     if len(samples) > 1:
         strandedness = config["programs"]["strandedness"].strip()
         if strandedness == "yes":
             n = {"star":["STAR","star_stranded"],"htseq-gene":["HTseq-count Gene", "htseq-gene"],"htseq-exon":["HTseq-count Exon", "htseq-exon"], 'kallisto': ['Kallisto', 'kallisto']}
-            print "strandedness == yes"
         elif strandedness == "no":
             n = {"star":["STAR","star_unstranded"],"htseq-gene":["HTseq-count Gene", "htseq-gene"],"htseq-exon":["HTseq-count Exon", "htseq-exon"], 'kallisto': ['Kallisto', 'kallisto']}
-            print "strandedness == no"
         elif strandedness == "reverse":
             n = {"star":["STAR","star_stranded-reverse"],"htseq-gene":["HTseq-count Gene", "htseq-gene"],"htseq-exon":["HTseq-count Exon", "htseq-exon"], 'kallisto': ['Kallisto', 'kallisto']}
-            print "strandedness == reverse"
         for prog, pname in n.iteritems():
             if config.has_key(prog):
-                print prog
-                print "Checking for file : " + path + "/outputs/" + pname[1]
                 #if os.path.isfile( path + "/outputs/" + pname[1]):
-                print "Rscript "+pathscript+"/stats_algs.R " + path + "/outputs/ " + pname[1]
                 os.system("Rscript "+pathscript+"/stats_algs.R " + path + "/outputs/ " + pname[1]) # PLOT OF HPC USAGE
                 html_table = html.print_table_default(path + "/outputs/" + pname[1] + "_pca.txt", -1, [0, 1, 2, 3, 4, 6, 7, 8, 12, 13, 14, 15, 17, 18, 19])
                 if prog != 'kallisto':
-	 	    print os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_PCA.html"
-                    print path + "/HTML/" + prog + "2.html"
-                    print prog
-                    print pname
                     html.build_amcharts(os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_PCA.html", path + "/HTML/" + prog + "2.html", prog, pname, path, html_table, project, lmenu)
                 # We don't care about Kallisto
                 #else:

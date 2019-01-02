@@ -163,7 +163,6 @@ def stats_fastq(path,samples,config):
              '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/2%20Per%20Base%20Sequence%20Quality.html" target="_blank">Per base sequence quality</a>',
              '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/3%20Per%20Sequence%20Quality%20Scores.html" target="_blank">Per sequence quality scores</a>',
              '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/4%20Per%20Base%20Sequence%20Content.html" target="_blank">Per base sequence content</a>',
-             '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/5%20Per%20Sequence%20GC%20Content.html" target="_blank">Per base GC content</a>',
              '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/5%20Per%20Sequence%20GC%20Content.html" target="_blank">Per sequence GC content</a>',
              '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/6%20Per%20Base%20N%20Content.html" target="_blank">Per base N content</a>',
              '<a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/7%20Sequence%20Length%20Distribution.html" target="_blank">Sequence Length Distribution</a>',
@@ -214,6 +213,9 @@ def stats_fastq(path,samples,config):
                         # The file will contain a line that is of no interest "Adapter Content". Skip it.
                         if "Adapter Content" in i:
                             continue
+                        # If the file contain a line "Per tile sequence quality". Skip it.
+                        if "Per tile sequence quality" in i:
+                            continue
                         i = i.strip("\n").split("\t")
                         # As a reminder of what is in the array names...
                         #names = ["","","per_base_quality.png","per_sequence_quality.png","per_base_sequence_content.png","per_base_gc_content.png","per_sequence_gc_content.png",
@@ -225,7 +227,7 @@ def stats_fastq(path,samples,config):
                             G = "#VAL"
                         data_for_read.append(G.replace("#VAL",i[0]).replace("#TIT", sample + "_" + str(len(data_for_sample)+1)))
                     # There may not be a Kmer line in the summary file. If not, append "NA" to inform people of this lack. 
-                    if len(data_for_read) == 11:
+                    if len(data_for_read) == 10:
                         data_for_read.append("NA")
                     summary_file.close()
 
