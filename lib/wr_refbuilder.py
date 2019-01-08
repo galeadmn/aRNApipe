@@ -132,17 +132,7 @@ if file_fasta != "":
         command  = config.path_star + " --outFileNamePrefix #GD --runThreadN " + str(nprocs_star) + " --runMode genomeGenerate"+ sb +" --genomeDir #GD --genomeFastaFiles #FASTA &>/dev/null"
     command  = command.replace("#GD", root_path + "/genomes_processed/" + genome_label + "/STAR_genome")
     command  = command.replace("#FASTA", file_fasta).replace("#GTF", file_gtf)
-    print command
-    print "FCF"
     os.system(command)
-
-## KALLISTO: CREATE TRANSCRIPTOME INDEX FOR KALLISTO ANALYSIS
-#if file_cdna != "":
-#    print "> Creation of transcriptome index for Kallisto analysis: 'kallisto.idx'"
-#    command  = config.path_kallisto + "  index -i #OUTPUT #INPUT &>/dev/null"
-#    command  = command.replace("#OUTPUT", root_path + "/genomes_processed/" + genome_label + "/kallisto.idx")
-#    command  = command.replace("#INPUT", file_cdna)
-#    os.system(command)
 
 ## REFFLAT FORMAT
 if file_gtf != "":
