@@ -47,10 +47,6 @@ config.path_genome = config.path_genome.replace("#LABEL", var["genome_build"])
 if not os.path.exists(config.path_genome):
     exit("path_genome not found. Genome build " + var["genome_build"] + " missing or incomplete.")
 config.path_index = config.path_index.replace("#LABEL", var["genome_build"])
-print config.path_index
-# We don't use kallisto
-#if not os.path.exists(config.path_index):
-#    exit("path_index not found. Genome build " + var["genome_build"] + " missing or incomplete.")
 config.path_annotation = config.path_annotation.replace("#LABEL", var["genome_build"])
 print config.path_annotation
 if not os.path.exists(config.path_annotation):
@@ -60,10 +56,6 @@ for i in range(3):
     if not os.path.exists(config.annots[i]):
         print config.annots[i]  
         exit("annots not found. ")
-config.path_star_fusion = config.path_star_fusion.replace("#LABEL", var["genome_build"])
-if int(var["star-fusion"].split("/")[0]) > 0:
-    if not os.path.exists(config.path_star_fusion):
-        exit("STAR fusion enabled but indexes not found in the genome reference folder: " + config.path_star_fusion)
 
 var["htseq-gene"] = var["htseq-gene"].strip()
 var["htseq-exon"] = var["htseq-exon"].strip()
@@ -85,39 +77,22 @@ print "> ANALYSIS:"
 print "  - TrimGalore:      " + var["trimgalore"]
 print "  - FastQC:          " + var["fastqc"]
 print "  - STAR:            " + var["star"]
-print "  - STAR-Fusion:     " + var["star-fusion"]
-print "  - Picard QC:       " + var["picard"]
-print "  - Picard IS:       " + var["picard_IS"]
 print "  - HTseq (gene):    " + var["htseq-gene"]
 print "  - HTseq (exon):    " + var["htseq-exon"]
-print "  - Kallisto:        " + var["kallisto"]
 if var.has_key('sam2sortbam'):
     print "  - sam2sortbam:     " + var["sam2sortbam"]
-print "  - gatk:            " + var["gatk"]
-print "  - Varscan:         " + var["varscan"]
-print "  - jSplice:         " + var["jsplice"]
 print "> INDIVIDUAL ANALYSIS SETTINGS:"
 print "  - TrimGalore args: " + var["trimgal_args"]
 print "  - STAR arguments:  " + var["star_args"]
 print "  - STAR 2-pass:     " + var["star2pass"]
-print "  - STAR-Fusion args:" + var["starfusion_args"]
-print "  - Kall bootstraps: " + var["kalboot"]
-print "  - VARSCAN args:    " + var["varscan_args"]
-print "  - GATK args:       " + var["gatk_args"]
 print "  - HTseqGene mode:  " + var["htseq-gene-mode"]
 print "  - HTseqExon mode:  " + var["htseq-exon-mode"]
-print "  - jSplice phenotpe:" + var["jsplice_pheno"]
-print "  - jSplice args:    " + var["jsplice_args"]
 
-samples, phenos = vcrparser.get_samples(path_base, folder, opt.samples, get_phenos=True)
+samples = vcrparser.get_samples(path_base, folder, opt.samples, get_phenos=False)
 
 vcrparser.write_logg(samples)
 
 
-if var["jsplice"]:
-    if float(var["jsplice"].split('/')[0]) >= 1:
-        if var['jsplice_pheno'] not in phenos:
-            exit('Error: Phenotype column of jSplice not found in samples file.')
 ##########################################################
 ## Creates 'temp' folder for temporary managing files
 ##########################################################
@@ -178,15 +153,6 @@ if int(var["star"].split("/")[0]) > 0:
         for i, j in args.iteritems():
             star_params = star_params + " " + i + " " + j
 ##########################################################
-## Other checks
-##########################################################
-if int(var["gatk"].split("/")[0]) > 0:
-    if not config.annots_gatk.has_key(var["genome_build"]):
-        exit("GATK annotation files are not available for this genome build: " + var["genome_build"])
-if (int(var["star-fusion"].split("/")[0]) > 0) or (int(var["picard_IS"].split("/")[0]) > 0):
-    if len(samples[samples.keys()[0]]) == 2:
-        exit("Star-Fusion/Picard-Insert-Size require paired-end reads.")
-##########################################################
 ## Starts analysis
 ##########################################################
 procs = list()
@@ -206,27 +172,12 @@ if int(var["fastqc"].split("/")[0]) > 0:
         print "About to call fastqc"
         job_id_qc, logs_qc = programs.fastqc(timestamp, path_base, folder, samples_v, var["fastqc"], var["wt"], var["q"], tg)
         procs.append(logs_qc)
-if int(var["kallisto"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "kallisto", opt.m)
-    if len(samples_v) > 0:
-        job_id_kal, logs_kal = programs.kallisto(timestamp, path_base, folder, samples_v, config.path_index, var["kalboot"], var["kallisto"], var["wt"], var["q"], tg)
-        procs.append(logs_kal)
-if int(var["star-fusion"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "star-fusion", opt.m)
-    if len(samples_v) > 0:
-        job_id_sf, logs_sf = programs.starfusion(timestamp, path_base, folder, samples_v, var["star-fusion"], var["wt"], var["q"], config.path_star_fusion, var["starfusion_args"], tg)
-        procs.append(logs_sf)
 if int(var["star"].split("/")[0]) > 0:
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "star", opt.m)
     if len(samples_v) > 0:
         job_id_star, logs_star = programs.star(timestamp, path_base, folder, samples_v, var["star"], var["wt"], var["q"], config.path_genome, star_params, tg)
         w = vcrparser.job_wait(job_id_star, 20)
         procs.append(job_id_star)
-if int(var["picard"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "picard", opt.m)
-    if len(samples_v) > 0:
-        job_id_qca, logs_qca  = programs.picardqc(timestamp, path_base, folder, samples_v, var["picard"], var["wt"], var["q"], config.annots, var["strandedness"])
-        procs.append(logs_qca)
 if int(var["htseq-gene"].split("/")[0]) > 0:
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "htseq-gene", opt.m)
     if len(samples_v) > 0:
@@ -244,29 +195,8 @@ if (int(var["sam2sortbam"].split("/")[0]) > 0) or (int(var["jsplice"].split("/")
         job_id_sam2sortbam, logs_sam2sortbam = programs.sam2sortbam(timestamp, path_base, folder, samples_v, gk, var["wt"], var["q"])
         procs.append(job_id_sam2sortbam)
         w = vcrparser.job_wait(job_id_sam2sortbam, 20)
-if int(var["picard_IS"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "picard_IS", opt.m)
-    if len(samples_v) > 0:
-        job_id_insert, logs_insert = programs.picard_IS(timestamp, path_base, folder, samples_v, var["picard_IS"], var["wt"], var["q"])
-        procs.append(logs_insert)
-if int(var["jsplice"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "jsplice", opt.m)
-    if len(samples_v) > 0:
-        job_id_jsplice, logs_jsplice = programs.jsplice(timestamp, path_base, folder, samples_v, var["jsplice"], var["wt"], var["q"], var["genome_build"], phenos[var['jsplice_pheno']], var['jsplice_args'], var["strandedness"])
-        procs.append(logs_jsplice)
-if int(var["gatk"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "gatk", opt.m)
-    if len(samples_v) > 0:
-        job_id_gatk, logs_gatk = programs.gatk(timestamp, path_base, folder, samples_v, var["gatk"], var["wt"], var["q"], var["genome_build"], var["gatk_args"])
-        procs.append(logs_gatk)
-if int(var["varscan"].split("/")[0]) > 0:
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "varscan", opt.m)
-    if len(samples_v) > 0:
-        job_id_varscan, logs_varscan = programs.varscan(timestamp, path_base, folder, samples_v, var["varscan"], var["wt"], var["q"], var["genome_build"], var["varscan_args"])
-        procs.append(logs_varscan)
 
 if len(procs) > 0:
-    print procs
     for proc in procs:
         w = vcrparser.job_wait(proc, 10)
 

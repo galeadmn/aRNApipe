@@ -12,7 +12,6 @@ parser = optparse.OptionParser(description = desc)
 parser.add_option("-L", "--label", dest = "label",default = "", help = "[Required] Identifier label for the genome.")
 parser.add_option("-p", "--path",  dest = "path", default = "", help = "[Required] Absolute path to the directory where the folder 'genomes_processed' is located.")
 parser.add_option("-f", "--fasta", dest = "fasta",default = "", help = "Path to the uncompressed genome fasta file ('.fa' or '.fasta').")
-parser.add_option("-c", "--cdna",  dest = "cdna", default = "", help = "Path to the cDNA fasta file (accepts '.gz').")
 parser.add_option("-g", "--gtf",   dest = "gtf",  default = "", help = "Path to the GTF gene set file ('.gtf').")
 parser.add_option("-n", "--ncpu",  dest = "n",    default = "8",help = "Number of threads that STAR will use to generate the reference genome (default=8).")
 parser.add_option("-r", "--ram",  dest = "ram",    default = "",help = "Required RAM (Gb).")
@@ -64,12 +63,6 @@ if file_fasta != "":
 else:
     print " FASTA file not provided."
     k += 1
-#if file_cdna != "":
-#    if not os.path.exists(file_cdna):
-#        exit("Some of the input GTF/CDNA/FASTA files not found.")
-#else:
-#    print " cDNA file not provided."
-#    k += 1
 if file_gtf != "":
     if not os.path.exists(file_gtf):
         exit("Some of the input GTF/CDNA/FASTA files not found.")
@@ -111,12 +104,6 @@ if file_gtf != "":
     if res == 0:
         exit("Error generating annotations...")
 
-## GENERATE INDEXES FOR GATK
-if file_fasta != "":
-    print "> Generating index and dict files..."
-    res = refbuild.fasta2dict(root_path + "/genomes_processed/" + genome_label + "/genome.fa", config.path_samtools, config.path_picard)
-    if res == 0:
-        exit("Error generating dict and index files...")
 
 ## STAR: CREATE GENOME FOR STAR ANALYSIS
 if file_fasta != "":

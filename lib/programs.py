@@ -42,7 +42,7 @@ def submit_job_super(pname, path, wt, nproc, q, ns, bsub_suffix, nstar, timestam
     job_ids = "|".join(job_ids)
     logs = "|".join(logs)
     out = open(path + "/temp/pids.txt", 'a')
-    print "Path = " + path + "/temp/pids.txt"
+    #print "Path = " + path + "/temp/pids.txt"
     print >> out, pname + "\t" + job_ids + "\t" + logs
     out.close()
     return job_ids, logs
@@ -67,14 +67,6 @@ def create_scripts(sample_count, commands, path_base, folder, output):
         print >> out[k % sample_count], commands[k]
     for i in out:
         i.close()
-
-#    for i in range(sample_count):
-#        fh = open(path_base + folder + "/" + output + "/script_" + str(i) + ".sh",'w')
-#        fh.write("#!/bin/bash\n")
-#        fh.write("echo $HOSTNAME\n")
-#        fh.write(commands[i].replace("\r",""))
-#        fh.close
-
 
 
 ###################################
@@ -294,67 +286,15 @@ def star(timestamp, path_base, folder, samples, nproc, wt, q, path_genome, star_
                 fn = g + files[0].split("/")[-1] + suf
             else:
                 fn = g + files[0].split("/")[-1] + suf + " " + g + files[1].split("/")[-1] + suf
-        command = config.path_star + " --quantMode GeneCounts --runThreadN " + str(nproc) + " --genomeDir " + path_genome
+        command = "CT=$(lscpu --online --parse | wc -l)\n"
+        command = command + "CPUs=$(expr $CT - 6)\n"
+        command = command + config.path_star + " --quantMode GeneCounts --runThreadN $CPUs --genomeDir " + path_genome
         command = command + " --readFilesIn " + fn + " --outFileNamePrefix " + path_base + folder + "/results_star/" + sample + "_" + gg
         if len(star_params) > 0:
             command = command + star_params
         commands.append(command + sample_checker.replace("#FOLDER", path_base + folder + "/results_star").replace("#SAMPLE", sample))
     create_scripts(len(samples), commands, path_base, folder, output)
     return submit_job_super("star", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, len(samples), timestamp)
-
-
-def starfusion(timestamp, path_base, folder, samples, nproc, wt, q, path_star_fusion, star_fusion_params, tg):
-    output = "results_star-fusion"
-    secure_mkdir(path_base + folder, output)
-    print "## Identification of gene fusions with star-fusion"
-    print "> Writing jobs for Star-Fusion..."
-    bsub_suffix = manager.get_bsub_arg(nproc, len(samples))
-    commands = list()
-    ksamp = sortbysize(samples)
-    for sample in ksamp:
-        files = samples[sample]
-        if not tg:
-            fn = files
-        else:
-            g = path_base + folder + "/results_trimgalore/"
-            suf = ""
-            if not files[0].split("/")[-1].endswith(".gz"):
-                suf = ".gz"
-            fn = [g + files[0].split("/")[-1] + suf, g + files[1].split("/")[-1] + suf]
-        prefix = path_base + folder + "/results_star-fusion/" + sample
-        call = config.path_starfusion + " --output_dir " + prefix + " --genome_lib_dir " + path_star_fusion + " --left_fq " + fn[0] + " --right_fq " + fn[1] + " --CPU " + str(nproc)
-        if len(star_fusion_params) > 0:
-            call = call + star_fusion_params
-        commands.append(call + sample_checker.replace("#FOLDER", path_base + folder + "/results_star-fusion").replace("#SAMPLE", sample))
-    create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("star-fusion", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, nchild, timestamp)
-
-
-def picardqc(timestamp, path_base, folder, samples, nproc, wt, q, annots, strand):
-    nstrand = {" --stranded=no":"NONE", " --stranded=yes":"FIRST_READ_TRANSCRIPTION_STRAND", " --stranded=no":"SECOND_READ_TRANSCRIPTION_STRAND"}
-    output = "results_picard"
-    secure_mkdir(path_base + folder, output)
-    print "## Alignment QC Picard-CollectRnaSeqMetrics"
-    print "> Writing jobs for Picard QC..."
-    bsub_suffix = manager.get_bsub_arg(nproc, len(samples))
-    commands = list()
-    ksamp = sortbysize(samples)
-    proc_files = os.listdir(path_base + folder + "/results_star/")
-    for sample in ksamp:
-        in_file = path_base + folder + "/results_star/" + sample + "_Aligned.out.sam"
-        if sample + "_Aligned.out.sam" in proc_files:
-            for i in range(len(config.nannots)):
-                annot    = annots[i]
-                out_file = in_file.replace(".sam", "." + config.nannots[i] + ".qc").replace("results_star/", "results_picard/").replace("_Aligned.out", "")
-                call = "java -jar " + config.path_picard + "/CollectRnaSeqMetrics.jar REF_FLAT=" + annot + " STRAND_SPECIFICITY=" + nstrand[strand] + " INPUT=" + in_file + " OUTPUT=" + out_file
-                if i == (len(config.nannots)-1):
-                    commands.append(call + sample_checker.replace("#FOLDER", path_base + folder + "/results_picard").replace("#SAMPLE", sample))
-                else:
-                    commands.append(call)
-        else:
-            print "Warning: [Picard] STAR output file not found -> " + in_file
-    create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("picard", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, nchild, timestamp)
 
 
 def htseq(timestamp, path_base, folder, samples, path_annotation, nproc, wt, q, mode, strand, countmode):
@@ -410,154 +350,3 @@ def sam2sortbam(timestamp, path_base, folder, samples, nproc, wt, q):
             print "Warning: [SAM2SORTEDBAM] STAR output file not found -> " + in_file
     create_scripts(len(samples), commands, path_base, folder, output)
     return submit_job_super("sam2sortbam", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, len(samples), timestamp)
-
-
-def jsplice(timestamp, path_base, folder, samples, nproc, wt, q, genomebuild, pheno, extra_args, strand):
-    output_dir = path_base + folder + '/results_jsplice'
-    secure_mkdir(path_base + folder, 'results_jsplice')
-    print "## jSPLICE"
-    print "> Writing jobs for jSPLICE..."
-    bsub_suffix = manager.get_bsub_arg('1/NA/NA', len(samples))
-    commands = list()
-    ksamp = sortbysize(samples)
-    out = open(output_dir + '/expdesign.txt', 'w')
-    print >> out, '#exp\tcond\tjxnFile\tbamFile'
-    for sample in ksamp:
-        sj_file = path_base + folder + '/results_star/' + sample + '_SJ.out.tab' # Junction file created by STAR
-        sj_out_file = output_dir + '/' + sample + '.SJ.bed'
-        bam_file = path_base + folder + '/results_sam2sortbam/' + sample + '.sorted.bam' # BAM file created by STAR/Picard(AddOrReplaceReadGroups)
-        if os.path.exists(sj_file) and os.path.exists(bam_file) and len(pheno[sample].split(':'))==2:
-            command = 'python ' + config.path_jsplice + '/starJxn2bed.py -f ' + sj_file + ' -o '+ sj_out_file
-            commands.append(command + sample_checker.replace("#FOLDER", output_dir).replace("#SAMPLE", sample))
-            print >> out, '\t'.join([pheno[sample].split(':')[0], pheno[sample].split(':')[1], sj_out_file, bam_file])
-        else:
-            print "Warning: [JSPLICE] STAR output files not found -> " + sample
-    out.close()
-    if strand == " --stranded=no":
-        extra_args = '-s ' + extra_args
-    commands.append('python ' + config.path_jsplice + '/jSplice.py -d ' + output_dir + '/expdesign.txt -o ' + output_dir + ' -a '+ config.path_annotation.replace("#LABEL", genomebuild) + ' ' + extra_args)
-    create_scripts(len(samples), commands, path_base, folder, 'results_jsplice')
-    return submit_job_super("jsplice", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, nchild, timestamp)
-
-
-def picard_IS(timestamp, path_base, folder, samples, nproc, wt, q):
-    output = "results_picard_IS"
-    secure_mkdir(path_base + folder, output)
-    print "## Picard-InsertSize"
-    print "> Writing jobs for Picard InsertSize..."
-    bsub_suffix = manager.get_bsub_arg(nproc, len(samples))
-    commands = list()
-    ksamp = sortbysize(samples)
-    proc_files = os.listdir(path_base + folder + "/results_sam2sortbam/")
-    for sample in ksamp:
-        in_file = path_base + folder + "/results_sam2sortbam/" + sample + ".sorted.bam"
-        if sample + ".sorted.bam" in proc_files:
-            for i in range(len(config.nannots)):
-                out_file = in_file.replace("results_sam2sortbam/", "results_picard_IS/").replace(".sorted.bam", "")
-                call = "java -jar " + config.path_picard + "/CollectInsertSizeMetrics.jar I="+in_file+" O="+out_file+".txt H="+out_file+".pdf"
-                commands.append(call + sample_checker.replace("#FOLDER", path_base + folder + "/results_picard_IS").replace("#SAMPLE", sample))
-        else:
-            print "Warning: [Picard] Sorted BAM file not found -> " + in_file
-    create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("picard_IS", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, nchild, timestamp)
-
-
-def varscan(timestamp, path_base, folder, samples, nproc, wt, q, genome_build, args):
-    ref = config.path_fasta.replace("#LABEL",genome_build)
-    output = "results_varscan"
-    secure_mkdir(path_base + folder, output)
-    print "## Variang calling with VARSCAN"
-    print "> Writing jobs for VARSCAN..."
-    bsub_suffix = manager.get_bsub_arg(nproc, len(samples))
-    commands = list()
-    ksamp = sortbysize(samples)
-    proc_files = os.listdir(path_base + folder + "/results_sam2sortbam/")
-    for sample in ksamp:
-        in_file = path_base + folder + "/results_sam2sortbam/" + sample + ".sorted.bam"
-        if sample + ".sorted.bam" in proc_files:
-            out_file = path_base + folder + "/results_varscan/" + sample + ".vcf"
-            com = config.path_samtools + " mpileup -B -f " + ref + " " + in_file + " | java -jar " + config.path_varscan + " mpileup2cns " + args + " > " + out_file
-            commands.append(com + sample_checker.replace("#FOLDER", path_base + folder + "/results_varscan").replace("#SAMPLE", sample))
-        else:
-            print "Warning: [VARSCAN] SORTED BAM output file not found -> " + in_file
-    create_scripts(len(samples), commands, path_base, folder, output)
-    return  submit_job_super("varscan", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, nchild, timestamp)
-
-
-def gatk(timestamp, path_base, folder, samples, nproc, wt, q, genome_build, args):
-    args = args.split("|")
-    multithread = False
-    filt = "30"
-    if len(args) == 2:
-        if args[0] == "yes":
-            multithread = True
-        filt = args[1]
-    output = "results_gatk"
-    secure_mkdir(path_base + folder, output)
-    print "## Variang calling with GATK"
-    print "> Writing jobs for GATK..."
-    bsub_suffix = manager.get_bsub_arg(nproc, len(samples))
-    commands = list()
-    ksamp = sortbysize(samples)
-    proc_files = os.listdir(path_base + folder + "/results_sam2sortbam/")
-    for sample in ksamp:
-        in_file = path_base + folder + "/results_sam2sortbam/" + sample + ".sorted.bam"
-        if sample + ".sorted.bam" in proc_files:
-            C = gatk_commands(path_base + folder, sample, genome_build, multithread, filt)
-            commands.append("\n".join(C))
-        else:
-            print "Warning: [GATK] SORTED BAM output file not found -> " + in_file
-    create_scripts(len(samples), commands, path_base, folder, output)
-    return  submit_job_super("gatk", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, nchild, timestamp)
-
-
-def gatk_commands(path, sample, ref, multithread, filter):
-    try:
-        parameters = { "SAMPLE": sample,
-                       "INPUT": path + "/results_sam2sortbam/" + sample + ".sorted.bam",
-                       "OUTDIR": path + "/results_gatk/",
-                       "PICARD": config.path_picard,
-                       "GATK": config.path_gatk,
-                       "MT_RTC": "",
-                       "MT_BR": "",
-                       "MT_PR": "",
-                       "FILTERVAL": str(filter),
-                       "REF": config.path_fasta.replace("#LABEL", ref),
-                       "DBSNP": config.path_db + "/genomes_processed/" + ref + "/gatk/" + config.annots_gatk[ref][0]}
-        temp = ["", ""]
-        for i in config.annots_gatk[ref][1]:
-            temp[0] = temp[0] + " -known " + config.path_db + "/genomes_processed/" + ref + "/gatk/" + i
-            temp[1] = temp[1] + " -knownSites " + config.path_db + "/genomes_processed/" + ref + "/gatk/" + i
-        parameters["INDEL"] = temp[0]
-        parameters["IND_SITES"] = temp[1]
-        if multithread:
-            parameters["MT_RTC"] = " -nt " + str(config.gatk_multithread["RTC"])
-            parameters["MT_BR"] = " -nct " + str(config.gatk_multithread["BR"])
-            parameters["MT_PR"] = " -nct " + str(config.gatk_multithread["PR"])
-    except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        print message
-        return []
-    C = list()
-    # MARK DUPLICATES AND CREATE INDEX
-    C.append("java -jar #PICARD/MarkDuplicates.jar  I=#INPUT O=#OUTDIR/#SAMPLE.dedup.bam CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT M=#OUTDIR/#SAMPLE.sorted.dedup.metrics 2> #OUTDIR/#SAMPLE.1.dup.log")
-    # SPLIT N CIGARS
-    C.append("java -jar #GATK -T SplitNCigarReads -R #REF -I #OUTDIR/#SAMPLE.dedup.bam -o #OUTDIR/#SAMPLE.split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS 2> #OUTDIR/#SAMPLE.2.split.log")
-    # INDEL REALIGNMENT
-    C.append("java -jar #GATK -T RealignerTargetCreator #MT_RTC -R #REF -I #OUTDIR/#SAMPLE.split.bam -o #OUTDIR/#SAMPLE.intervals #INDEL 2> #OUTDIR/#SAMPLE.3.realign1.log")
-    C.append("java -jar #GATK -T IndelRealigner -R #REF -I #OUTDIR/#SAMPLE.split.bam -targetIntervals #OUTDIR/#SAMPLE.intervals #INDEL -o #OUTDIR/#SAMPLE.processed.bam 2> #OUTDIR/#SAMPLE.4.realign2.log")
-    # BASE RECALIBRATION
-    C.append("java -jar #GATK -T BaseRecalibrator #MT_BR -I #OUTDIR/#SAMPLE.processed.bam -R #REF #IND_SITES -knownSites #DBSNP -o #OUTDIR/#SAMPLE.table 2> #OUTDIR/#SAMPLE.5.BQSR.log")
-    C.append("java -jar #GATK -T PrintReads #MT_PR -R #REF -I #OUTDIR/#SAMPLE.processed.bam -BQSR #OUTDIR/#SAMPLE.table -o #OUTDIR/#SAMPLE.rec.bam 2> #OUTDIR/#SAMPLE.6.BQSR2.log")
-    # HAPLOTYPE CALLER
-    C.append("java -jar #GATK -T HaplotypeCaller -R #REF -I #OUTDIR/#SAMPLE.rec.bam -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o #OUTDIR/#SAMPLE.vcf 2> #OUTDIR/#SAMPLE.7.HaploCall.log")
-    # FILTER
-    C.append("java -jar #GATK -T VariantFiltration -R #REF -V #OUTDIR/#SAMPLE.vcf -window 35 -cluster 3 -filterName FS -filter 'FS > #FILTERVAL' -filterName QD -filter 'QD < 2.0' -o #OUTDIR/#SAMPLE.filt.vcf 2>  #OUTDIR/#SAMPLE.8.filt.log")
-    # SUBSTITUTION
-    for label, value in parameters.iteritems():
-        for i in range(len(C)):
-            C[i] = C[i].replace("#" + label, value)
-    C[len(C)-1] = C[len(C)-1] + sample_checker.replace("#FOLDER", path + "/results_gatk").replace("#SAMPLE", sample)
-    return C
-

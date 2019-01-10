@@ -29,7 +29,6 @@ def write_logg(message):
 
 def project_process(path_base, folder):
     samples = get_samples(path_base, folder, path_base + "/" + folder + "/samples.list")
-    print samples
     # Check main process
     print "## MAIN PROCESS ###########################"
     try:
@@ -62,16 +61,13 @@ def project_process(path_base, folder):
     for i in f:
         if not i.startswith("%"):
             i = i.strip("\n").split("\t")
-            if i[0] in ["trimgalore", "fastqc", "kallisto", "star", "star-fusion", "picard", "htseq-gene", "htseq-exon", 'sam2sortbam', "picard_IS", "varscan", "gatk", "jsplice"]:
+            if i[0] in ["trimgalore", "fastqc", "star", "htseq-gene", "htseq-exon", 'sam2sortbam']:
                 i[1] = i[1].split("/")[0]
                 if i[1] != "0":
                     config[i[0]] = i[1]
-    if (config.has_key("varscan") or config.has_key("gatk") or config.has_key("picard_IS")) and (not config.has_key("sam2sortbam")):
-        config["sam2sortbam"] = 1
     if len(config) > 0:
-        for pg in ["trimgalore", "fastqc", "kallisto", "star", "star-fusion", "picard", "htseq-gene", "htseq-exon", "sam2sortbam", "picard_IS", "varscan", "gatk", "jsplice"]:
+        for pg in ["trimgalore", "fastqc", "star", "htseq-gene", "htseq-exon", "sam2sortbam"]:
             if config.has_key(pg):
-                print "Process:  " + pg
                 if not pids.has_key(pg):
                     print "- Already done or waiting for previous module output"
                 else:
@@ -132,10 +128,9 @@ def config_file(config, path_base, folder, paths):
     # path_base: Absolute path to the location where the project folder has been created
     # folder: Name of the project folder located in 'path_base'
     mandatory_fields = ['genome_build', 'strandedness', 'trimgalore', 'fastqc',
-                        'star', 'star-fusion', 'picard', 'htseq-gene', 'htseq-exon',
-                        'kallisto', 'sam2sortbam', 'picard_IS', 'gatk', 'varscan',
-                        'q', 'wt', 'star_args', 'star2pass', 'starfusion_args', 'kalboot',
-                        'varscan_args', 'gatk_args', 'htseq-gene-mode', 'htseq-exon-mode', "jsplice"]
+                        'star', 'htseq-gene', 'htseq-exon',
+                        'sam2sortbam', 'q', 'wt', 'star_args', 'star2pass',
+                        'htseq-gene-mode', 'htseq-exon-mode']
     f = open(config, 'r')
     var = dict()
     for i in f:
@@ -189,8 +184,6 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
     # CHECK COLUMN HEADERS AND SINGLE-END/PAIRED-END DATA
     i = f.readline().strip("\r").strip("\n").split("\t")
     idx = [-1, -1, -1]
-    idx_pheno = []
-    pheno_names = []
 
     # idx[0] will contain the sample ID
     # idx[1] will contain the first read of a pair or the only read of a singleton
@@ -204,9 +197,6 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
             idx[2] = j
         elif i[j] == "FASTQ":
             idx[1] = j
-        elif i[j].startswith('PHENO_'):
-            pheno_names.append(i[j])
-            idx_pheno.append(j)
 
     # 'SampleID' AND 'FASTQ' COLUMNS ARE REQUIRED
     # Exit if these columns are not present
@@ -215,7 +205,6 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
 
     # PARSE SAMPLE DATA
     errors = dict({"ID duplication errors":[],"Missing input files":[], "Empty input files":[]})
-    phenos = {i: {} for i in pheno_names}
     for line in f:
         line_list = line.strip().split("\t")
         if len(line_list) > 1:
@@ -241,15 +230,10 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
                                 #   2. Second read file
                                 #   3. Size of first read file in bytes
                                 #   4. Size of second read file in bytes
-
-
 				# QUALITY CONTROL GOES HERE
                                 samples[line_list[idx[0]]] = [line_list[idx[1]], line_list[idx[2]], os.stat(line_list[idx[1]]).st_size, os.stat(line_list[idx[2]]).st_size]
                             else:
                                 samples[line_list[idx[0]]] = [line_list[idx[1]], line_list[idx[2]], 0, 0]
-                            if len(idx_pheno):
-                                for ifil in range(len(idx_pheno)):
-                                    phenos[pheno_names[ifil]][line_list[idx[0]]] = line_list[idx_pheno[ifil]]
                         except:
                             errors["Missing input files"].append(i[idx[ifile]])
                 else:
@@ -273,11 +257,8 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
                                 samples[line_list[idx[0]]] = [line_list[idx[1]], os.stat(line_list[idx[1]]).st_size]
                             else:
                                 samples[line_list[idx[0]]] = [line_list[idx[1]], 0]
-                            if len(idx_pheno):
-                                for ifil in range(len(idx_pheno)):
-                                    phenos[pheno_names[ifil]][line_list[idx[0]]] = line_list[idx_pheno[ifil]]
                         except:
-                            errors["Missing input files"].append(line_list[idx[ifile]])
+                            errors["Missing input files"].append(i[idx[ifile]])
                 else:
                     exit("Error: Input sample files must be '.fastq' or '.fastq.gz'")
     if len(samples) == 0:
@@ -291,10 +272,7 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
                 print "- " + k
     if r > 0:
         exit("Samples file errors detected")
-    if get_phenos:
-        return samples, phenos
-    else:
-        return samples
+    return samples
 
 
 #############################################################################

@@ -26,7 +26,7 @@ try:
     samples = vcrparser.get_samples(path.replace(project, ""), project, path + "/samples.list") # PARSES THE SAMPLE FILE AND ASSOCIATED FASTQ FILES
 except:
     samples = vcrparser.get_samples(path.replace(project, ""), project, path + "/samples.list", no_check=True)
-
+print "Returned from vcrparser"
 f = open(path + "/samples.list", 'r')
 h = f.readline()
 samples_ordered = list()
@@ -39,31 +39,12 @@ lmenu = html.get_menu(config, len(samples))
 #########################################################################
 # PROCESSES AND ARRANGES LOGS AND OUTPUT DATA FROM STAR, KALLISTO AND HTSEQ
 #########################################################################
-try:
-    spider_stats.stats_varcall(path, "varscan")
-except:
-    print "Unexpected error generating stats of VARSCAN."
-
-try:
-    spider_stats.stats_varcall(path, "gatk")
-except:
-    print "Unexpected error generating stats of GATK."
+# TRIMGALORE
 try:
     spider_stats.stats_trimgalore(path)
 except:
     print "Unexpected error generating stats of TRIMGALORE."
-try:
-    spider_stats.stats_fusion(path)
-except:
-    print "Unexpected error generating stats of Star-Fusion."
-try:
-    spider_stats.stats_log(path + "/logs/") # PARSES THE ASSOCIATED LSF LOG FILES AND WRTIES THE RELEVANT PARAMETERS IN OUTPUTS
-except:
-    print "Unexpected error generating stats of HPC."
-try:
-    spider_stats.stats_kallisto(path + "/results_kallisto/", samples_ordered) # GENERATES STATISTICS, ESTIMATED COUNTS, TPM AND ANNOTATION MATRICES
-except:
-    print "Error: Statistics of KALLISTO not yet ready or unexpected error."
+# STAR
 try:
     spider_stats.stats_star(path + "/results_star/", samples_ordered)  # GENERATES STATISTICS, COUNTS, RPKM AND ANNOTATION MATRICES
 except Exception as ex:
@@ -72,6 +53,7 @@ except Exception as ex:
     message = template.format(type(ex).__name__, ex.args)
     print traceback.format_exc()
     print message
+# HTSEQ
 try:
     spider_stats.stats_htseq(path + "/results_htseq-gene/", samples_ordered, "gene") # GENERATES STATISTICS, COUNTS, RPKM AND ANNOTATION MATRICES
 except Exception as ex:
@@ -96,52 +78,7 @@ except Exception as ex:
     message = template.format(type(ex).__name__, ex.args)
     print message
 
-#########################################################################
-# PICARD
-#########################################################################
-try:
-    if config.has_key("picard"):
-        print "> Generating webpage with picard statistics..."
-        print "  - " + path + "/HTML/picard.html"
-        html_table = html.stats_picard(path,samples,config) # PROVIDES HTML TABLE WITH PICARD STATS
-        data = html.bar_getdata (path + "/outputs/stats_picard.txt",0,range(1,7), range(7,11))
-        html.build_from_template("PICARD", project, data, html_table, "", path+"/HTML/picard.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_PICARD.html", lmenu)
-    if config.has_key("picard_IS"):
-        print "> Generating webpage with picard insert size statistics..."
-        print "  - " + path + "/HTML/picard-is.html"
-        x = html.stats_picard_2(path,samples,config)
-        html_table = html.print_table_default(path + "/outputs/stats_picard2.txt", -1, [])
-        data = html.bar_getdata (path + "/outputs/stats_picard2.txt",0,range(1,2),[])
-        html.build_from_template("PICARD-InsertSize", project, data, html_table, "", path+"/HTML/picard-is.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_PICARDIS.html", lmenu)
-except:
-    print traceback.format_exc()
-    print "  - Not ready"
 
-#########################################################################
-# HTML STAR-FUSION WEBPAGE
-#########################################################################
-try:
-    if config.has_key("star-fusion"):
-        print "> Generating webpage with Star-Fusion results..."
-        print "  - " + path + "/HTML/star-fusion.html"
-        html_table = html.print_table_default(path + "/outputs/starfusion_aggregate.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        html.build_from_template("STAR-FUSION", project, "", html_table, "", path+"/HTML/star-fusion.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_STARFUSION.html", lmenu)
-except:
-    print traceback.format_exc()
-    print "  - Not ready"
-
-#########################################################################
-# KALLISTO_QC
-#########################################################################
-try:
-    if config.has_key("kallisto"):
-        print "> Generating webpage with Kallisto statistics..."
-        print "  - " + path + "/HTML/kallisto.html"
-        html_table = html.print_table_default(path + "/outputs/kallisto_stats_est_counts.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        data = html.bar_getdata (path + "/outputs/kallisto_stats_est_counts.txt",0,range(1,2),[])
-        html.build_from_template("KALLISTO", project, data, html_table, "", path+"/HTML/kallisto.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_KALLISTO.html", lmenu)
-except:
-    print "Error: Statistics of KALLISTO not yet ready or unexpected error."
 #########################################################################
 # HTML SUMMARY WEBPAGE
 #########################################################################
@@ -221,59 +158,6 @@ except Exception as ex:
     print message
 
 #########################################################################
-# PICARD
-#########################################################################
-try:
-    if config.has_key("picard"):
-        print "> Generating webpage with picard statistics..."
-        print "  - " + path + "/HTML/picard.html"
-        html_table = html.stats_picard(path,samples,config) # PROVIDES HTML TABLE WITH PICARD STATS
-        data = html.bar_getdata (path + "/outputs/stats_picard.txt",0,range(1,7), range(7,11))
-        html.build_from_template("PICARD", project, data, html_table, "", path+"/HTML/picard.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_PICARD.html", lmenu)
-    if config.has_key("picard_IS"):
-        print "> Generating webpage with picard insert size statistics..."
-        print "  - " + path + "/HTML/picard-is.html"
-        x = html.stats_picard_2(path,samples,config)
-        html_table = html.print_table_default(path + "/outputs/stats_picard2.txt", -1, [])
-        data = html.bar_getdata (path + "/outputs/stats_picard2.txt",0,range(1,2),[])
-        html.build_from_template("PICARD-InsertSize", project, data, html_table, "", path+"/HTML/picard-is.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_PICARDIS.html", lmenu)
-except:
-    print traceback.format_exc()
-    print "  - Not ready"
-
-#########################################################################
-# HTML STAR-FUSION WEBPAGE
-#########################################################################
-try:
-    if config.has_key("star-fusion"):
-        print "> Generating webpage with Star-Fusion results..."
-        print "  - " + path + "/HTML/star-fusion.html"
-        html_table = html.print_table_default(path + "/outputs/starfusion_aggregate.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        html.build_from_template("STAR-FUSION", project, "", html_table, "", path+"/HTML/star-fusion.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_STARFUSION.html", lmenu)
-except Exception as ex:
-    print traceback.format_exc()
-    template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-    message = template.format(type(ex).__name__, ex.args)
-    print message
-    print "  - Not ready"
-
-#########################################################################
-# KALLISTO_QC
-#########################################################################
-try:
-    if config.has_key("kallisto"):
-        print "> Generating webpage with Kallisto statistics..."
-        print "  - " + path + "/HTML/kallisto.html"
-        html_table = html.print_table_default(path + "/outputs/kallisto_stats_est_counts.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        data = html.bar_getdata (path + "/outputs/kallisto_stats_est_counts.txt",0,range(1,2),[])
-        html.build_from_template("KALLISTO", project, data, html_table, "", path+"/HTML/kallisto.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_KALLISTO.html", lmenu)
-except Exception as ex:
-    template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-    message = template.format(type(ex).__name__, ex.args)
-    print message
-    print "  - Not ready"
-
-#########################################################################
 # STAR_QC
 #########################################################################
 try:
@@ -335,45 +219,4 @@ except Exception as ex:
     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
     message = template.format(type(ex).__name__, ex.args)
     print message
-    print "  - Not ready"
-
-#########################################################################
-# VARSCAN
-#########################################################################
-try:
-    if config.has_key("varscan"):
-        print "> Generating webpage with VARSCAN statistics..."
-        print "  - " + path + "/HTML/varscan.html"
-        html_table = html.print_table_default(path + "/outputs/stats_varscan.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        data = html.bar_getdata (path + "/outputs/stats_varscan.txt",0,[],[])
-        html.build_from_template("VARSCAN", project, data, html_table, "", path+"/HTML/varscan.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_GATK.html", lmenu)
-except:
-    print traceback.format_exc()
-    print "  - Not ready"
-
-#########################################################################
-# GATK
-#########################################################################
-try:
-    if config.has_key("gatk"):
-        print "> Generating webpage with GATK statistics..."
-        print "  - " + path + "/HTML/gatk.html"
-        html_table = html.print_table_default(path + "/outputs/stats_gatk.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        data = html.bar_getdata (path + "/outputs/stats_gatk.txt",0,[],[])
-        html.build_from_template("GATK", project, data, html_table, "", path+"/HTML/gatk.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_GATK.html", lmenu)
-except:
-    print traceback.format_exc()
-    print "  - Not ready"
-
-#########################################################################
-# jSplice
-#########################################################################
-try:
-    if config.has_key("jsplice"):
-        print "> Generating webpage with picard statistics..."
-        print "  - " + path + "/HTML/jsplice.html"
-        html_table = html.print_table_default(path + "/results_jsplice/jSplice_results.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        html.build_from_template("jSplice", project, "", html_table, "", path+"/HTML/jsplice.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_JSPLICE.html", lmenu)
-except:
-    print traceback.format_exc()
     print "  - Not ready"

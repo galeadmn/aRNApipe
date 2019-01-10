@@ -4,61 +4,6 @@ import config
 head_star_log = ["Sample", "Links","Started job","Started mapping","Finished","Mapping speed [Mr/h]","Input reads [n]","Input read length (mean)","Uniquely mapped [n]","Uniquely mapped [%]","Mapped length","Splices [n]","Splices annotated [n]","Splices GT/AG [n]","Splices: GC/AG [n]","Splices: AT/AC [n]","Splices: Non-canonical [n]","Mismatch rate per base [%]","Deletion rate per base [%]","Deletion average length","Insertion rate per base [%]","Insertion average length","Multimapping reads [n]","Multimapping reads [%]","Multimapping reads (+) [n]","Multimapping reads (+) [%]","Unmapped reads: too many mismatches [%]","Unmapped reads: too short [%]","Unmapped reads: other [%]"]
 
 
-def stats_varcall(path, mod):
-    f = open(path + "/samples.list", 'r')
-    h = f.readline()
-    samples = dict()
-    for i in f:
-        i = i.strip("\n").split("\t")
-        samples[i[0]] = path + "/results_" + mod + "/" + i[0] + ".vcf"
-    f.close()
-    out = open(path + "/outputs/stats_" + mod + ".txt", 'w')
-    print >> out, "sample_id\t0/1\t1/1"
-    for sample, filename in samples.iteritems():
-        if os.path.exists(filename):
-            f = open(filename, 'r')
-            i = f.readline()
-            n = [0,0,0]
-            for i in f:
-                if not i.startswith("#"):
-                    i = i.strip("\n").split("\t")
-                    if len(i) > 1:
-                        gt = i[9].split(":")[0]
-                        if gt == "1/1":
-                            n[1] += 1
-                        elif gt == "0/1":
-                            n[0] += 1
-                        elif gt == "1/2":
-                            n[2] += 1
-                        else:
-                            print gt
-            f.close()
-            print >> out, sample + "\t" + str(n[0]) + "\t" + str(n[1]) + "\t" + str(n[2])
-        else:
-            print >> out, sample + "\t-1\t-1\t-1"
-    out.close()
-
-def stats_fusion(path):
-    f = open(path + "/samples.list", 'r')
-    h = f.readline()
-    samples = dict()
-    for i in f:
-        i = i.strip("\n").split("\t")
-        samples[i[0]] = path + "/results_star-fusion/" + i[0] + "/star-fusion.fusion_candidates.final.abridged"
-    f.close()
-    out = open(path + "/outputs/starfusion_aggregate.txt", 'w')
-    print >> out, "sample_id\tFusionName\tJunctionReadCount\tSpanningFragCount\tSpliceType\tLeftGene\tLeftBreakpoint\tRightGene\tRightBreakpoint\tLargeAnchorSupport\tLeftBreakDinuc\tLeftBreakEntropy\tRightBreakDinucRightBreakEntropy"
-    for sample, filename in samples.iteritems():
-        if os.path.exists(filename):
-            f = open(filename, 'r')
-            i = f.readline()
-            for i in f:
-                i = i.strip("\n").split("\t")
-                if len(i) > 1:
-                    print >> out, sample + "\t" + "\t".join(i)
-    out.close()
-
-
 def stats_trimgalore(path):
     fields2 = ["Total reads processed:","Reads with adapters:","Reads written (passing filters):","Total basepairs processed:","Quality-trimmed:","Total written (filtered):"]
     fnames2 = ['Processed reads', 'Reads with adapters', 'Reads passing filters', 'Processed basepairs', 'Quality-trimmed basepairs', 'Basepairs passing filters']
@@ -385,77 +330,6 @@ def stats_log(path):
     out.close()
     return 1
 
-
-def stats_kallisto(path, samples):
-    print "> Recovering stats from Kallisto and building count matrices: " + path
-    M = ["eff_length", "est_counts", "tpm"]
-    if not os.path.exists(path):
-        return 1
-    g = os.listdir(path)
-    k = 0
-    N = [{},{},{}]
-    ng = list()
-    for sample in samples:
-        if sample in g:
-            if os.path.exists(path + "/" + sample + "/abundance.tsv"):
-                for i in range(3):
-                    N[i][sample] = []
-                f = open(path + "/" + sample + "/abundance.tsv", 'r')
-                i = f.readline()
-                nt= list()
-                for i in f:
-                    i = i.strip("\n").split("\t")
-                    nt.append(i[0] + "\t" + i[1])
-                    for k in range(3):
-                        N[k][sample].append(i[k+2])
-                f.close()
-                if len(nt) > len(ng):
-                    ng = nt
-    for i in range(len(M)):
-        MT = dict()
-        out = open(path.replace("/results_kallisto/","/outputs/") + "/kallisto_" + M[i] + ".txt", 'w')
-        print >> out, "target_id\tlength\t" + "\t".join(samples)
-        for j in range(len(ng)):
-            r = list()
-            for sample in samples:
-                if not MT.has_key(sample):
-                    MT[sample] = 0
-                if N[i].has_key(sample):
-                    if j < len(N[i][sample]):
-                        r.append(N[i][sample][j])
-                        MT[sample] += float(N[i][sample][j])
-                    else:
-                        r.append("NA")
-                else:
-                    r.append("NA")
-            print >> out, ng[j] + "\t" + "\t".join(r)
-        out.close()
-        out = open(path.replace("/results_kallisto/","/outputs/") + "/kallisto_stats_" + M[i] + ".txt", 'w')
-        print >> out, "sample_id\tTotalCounts\tLink"
-        for sample in samples:
-            if N[i].has_key(sample):
-                print >> out, sample + "\t" + str(MT[sample]) + "\t" + '<a href="../results_kallisto/'+sample +'/abundance.tsv" target="_blank">+</a>'
-            else:
-                print >> out, sample + "\t-1\t-1"
-        out.close()
-
-    print "  Data found for " + str(len(N[0])) + " of " + str(len(samples)) + " samples"
-    print "  Creating annotation file..."
-    D, H, L = get_annotation("transcript", path.replace("/results_kallisto/", "/config.txt"))
-    out = open(path.replace("/results_kallisto/","/outputs/") + "/kallisto_annotation.txt", 'w')
-    print >> out, "\t".join(H)
-    k = 0
-    for transcript in ng:
-        if D.has_key(transcript.split("\t")[0].split(".")[0]):
-            print >> out, D[transcript.split("\t")[0].split(".")[0]]
-            k += 1
-        else:
-            print >> out, "\t".join(["NA" for i in range(len(H))])
-    out.close()
-    print "  Recovered annotation for " + str(k) + " of " + str(len(ng)) + " transcripts"
-    return 1
-
-
 def stats_star(path, samples):
     print "> Recovering stats from STAR logs: " + path
     if not os.path.exists(path):
@@ -680,4 +554,3 @@ def stats_htseq(path, samples, mode):
         print >> out, ng[j] + "\t" + "\t".join(r)
     out.close()
     return 1
-
