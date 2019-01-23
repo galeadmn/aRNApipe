@@ -2,6 +2,7 @@
 import os
 import config
 import time
+import programs
 
 if config.mode == "LSF":
     import sys_LSF as manager
@@ -20,11 +21,6 @@ def change_environment(env):
                     os.environ[var] = val[0] + ":" + os.environ[var]
                 else:
                     os.environ[var] = val[0]
-
-def write_logg(message):
-    fh = open("/share/log.txt", 'a')
-    print >> fh, message
-    fh.close()
 
 
 def project_process(path_base, folder):
@@ -129,7 +125,7 @@ def config_file(config, path_base, folder, paths):
     # folder: Name of the project folder located in 'path_base'
     mandatory_fields = ['genome_build', 'strandedness', 'trimgalore', 'fastqc',
                         'star', 'htseq-gene', 'htseq-exon',
-                        'sam2sortbam', 'q', 'wt', 'star_args', 'star2pass',
+                        'q', 'wt', 'star_args', 'star2pass',
                         'htseq-gene-mode', 'htseq-exon-mode']
     f = open(config, 'r')
     var = dict()
@@ -173,7 +169,7 @@ def job_wait(job_id, secs):
 #############################################################################
 ## PARSES DE SAMPLES FILE
 #############################################################################
-def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False):
+def get_samples(path_base, folder, samplefile, no_check=False):
     # SCAN FOR FASTQ SAMPLE FILES
     try:
         f = open(samplefile, 'r')
@@ -182,13 +178,14 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
     samples = dict()
 
     # CHECK COLUMN HEADERS AND SINGLE-END/PAIRED-END DATA
-    i = f.readline().strip("\r").strip("\n").split("\t")
+    i = f.readline().split("\t")
     idx = [-1, -1, -1]
 
     # idx[0] will contain the sample ID
     # idx[1] will contain the first read of a pair or the only read of a singleton
     # idx[2] will contain the second read of a pair or -1 for singleton reads
     for j in range(len(i)):
+        i[j] = i[j].strip('\n').strip('\r')
         if i[j] == "SampleID":
             idx[0] = j
         elif i[j] == "FASTQ_1":
@@ -197,6 +194,7 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
             idx[2] = j
         elif i[j] == "FASTQ":
             idx[1] = j
+  
 
     # 'SampleID' AND 'FASTQ' COLUMNS ARE REQUIRED
     # Exit if these columns are not present
@@ -207,6 +205,8 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
     errors = dict({"ID duplication errors":[],"Missing input files":[], "Empty input files":[]})
     for line in f:
         line_list = line.strip().split("\t")
+        for j in range(len(line_list)):
+            line_list[j] = line_list[j].strip('\n').strip('\r')
         if len(line_list) > 1:
             # PAIRED-END (TWO FASTQ FILES PROVIDED PER SAMPLE)
             if idx[2] != -1:
@@ -235,7 +235,7 @@ def get_samples(path_base, folder, samplefile, get_phenos=False, no_check=False)
                             else:
                                 samples[line_list[idx[0]]] = [line_list[idx[1]], line_list[idx[2]], 0, 0]
                         except:
-                            errors["Missing input files"].append(i[idx[ifile]])
+                            errors["Missing input files"]
                 else:
                     exit("Error: Input sample files must be '.fastq' or '.fastq.gz'")
             # SINGLE-END (ONE FASTQ FILES PROVIDED PER SAMPLE

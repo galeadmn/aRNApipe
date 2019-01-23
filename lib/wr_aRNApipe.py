@@ -88,10 +88,7 @@ print "  - STAR 2-pass:     " + var["star2pass"]
 print "  - HTseqGene mode:  " + var["htseq-gene-mode"]
 print "  - HTseqExon mode:  " + var["htseq-exon-mode"]
 
-samples = vcrparser.get_samples(path_base, folder, opt.samples, get_phenos=False)
-
-vcrparser.write_logg(samples)
-
+samples = vcrparser.get_samples(path_base, folder, opt.samples)
 
 ##########################################################
 ## Creates 'temp' folder for temporary managing files
@@ -188,13 +185,6 @@ if int(var["htseq-exon"].split("/")[0]) > 0:
     if len(samples_v) > 0:
         job_id_htseqE, logs_htseqE = programs.htseq(timestamp, path_base, folder, samples_v, config.path_annotation, var["htseq-exon"], var["wt"], var["q"], "exon", var["strandedness"],var["htseq-exon-mode"])
         procs.append(logs_htseqE)
-if (int(var["sam2sortbam"].split("/")[0]) > 0) or (int(var["jsplice"].split("/")[0]) > 0) or (int(var["varscan"].split("/")[0]) > 0) or (int(var["gatk"].split("/")[0]) > 0) or (int(var["picard_IS"].split("/")[0]) > 0):
-    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "sam2sortbam", opt.m)
-    if len(samples_v) > 0:
-        gk = var["sam2sortbam"] if int(var["sam2sortbam"].split("/")[0]) > 0 else var["varscan"]
-        job_id_sam2sortbam, logs_sam2sortbam = programs.sam2sortbam(timestamp, path_base, folder, samples_v, gk, var["wt"], var["q"])
-        procs.append(job_id_sam2sortbam)
-        w = vcrparser.job_wait(job_id_sam2sortbam, 20)
 
 if len(procs) > 0:
     for proc in procs:

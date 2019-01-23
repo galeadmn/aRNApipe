@@ -267,13 +267,16 @@ def star(timestamp, path_base, folder, samples, nproc, wt, q, path_genome, star_
     commands = list()
     ksamp = sortbysize(samples)
     for sample in ksamp:
-        gg = ""
         files = samples[sample]
+        gg = ""
+        fn1 = ""
+        fn2 = ""
         if not tg:
             if len(files) == 2:
-                fn = files[0]
+                fn1 = files[0]
             else:
-                fn = files[0] + " " + files[1]
+                fn1 = files[0]
+                fn2 = files[1]
             if files[0].endswith(".fastq.gz"):
                 gg = " --readFilesCommand zcat"
         else:
@@ -283,22 +286,32 @@ def star(timestamp, path_base, folder, samples, nproc, wt, q, path_genome, star_
             if not files[0].split("/")[-1].endswith(".gz"):
                 suf = ".gz"
             if len(files) == 2:
-                fn = g + files[0].split("/")[-1] + suf
+                fn1 = g + files[0].split("/")[-1] + suf
             else:
-                fn = g + files[0].split("/")[-1] + suf + " " + g + files[1].split("/")[-1] + suf
-        command = "CT=$(lscpu --online --parse | wc -l)\n"
-        command = command + "CPUs=$(expr $CT - 6)\n"
-        command = command + config.path_star + " --quantMode GeneCounts --runThreadN $CPUs --genomeDir " + path_genome
-        command = command + " --readFilesIn " + fn + " --outFileNamePrefix " + path_base + folder + "/results_star/" + sample + "_" + gg
-        if len(star_params) > 0:
-            command = command + star_params
-        commands.append(command + sample_checker.replace("#FOLDER", path_base + folder + "/results_star").replace("#SAMPLE", sample))
+                fn1 = g + files[0].split("/")[-1] + suf 
+                fn2 = g + files[1].split("/")[-1] + suf
+        #command = "CT=$(lscpu --online --parse | wc -l)\n"
+        #command = command + "CPUs=$(expr $CT - 6)\n"
+        #command = command + config.path_star + " --quantMode GeneCounts --runThreadN $CPUs --genomeDir " + path_genome
+        #command = command + " --readFilesIn " + fn + " --outFileNamePrefix " + path_base + folder + "/results_star/" + sample + "_" + gg
+        #if len(star_params) > 0:
+        #    command = command + star_params
+        #commands.append(command + sample_checker.replace("#FOLDER", path_base + folder + "/results_star").replace("#SAMPLE", sample))
+        with open('/share/code/lib/script_templates/star_script.sh','r') as script_template:
+            command = script_template.read()
+            script_template.close()
+        command = command.replace("OUTPUT_DIR", path_base+folder+"/results_star/")
+        command = command.replace("INPUT_FILES1", fn1)
+        command = command.replace("INPUT_FILES2", fn2)
+        command = command.replace("GENOME_DIR", path_genome)
+        command = command.replace("SAMPLE_NAME", sample)
+        command = command.replace("STAR_PARAMS", star_params)
+        commands.append(command)
     create_scripts(len(samples), commands, path_base, folder, output)
     return submit_job_super("star", path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, len(samples), timestamp)
 
 
 def htseq(timestamp, path_base, folder, samples, path_annotation, nproc, wt, q, mode, strand, countmode):
-    myout = open("/share/frank.txt", "a", 0)
     output = "results_htseq-" + mode
     secure_mkdir(path_base + folder, output)
     print "## HTseq-count"
@@ -307,26 +320,18 @@ def htseq(timestamp, path_base, folder, samples, path_annotation, nproc, wt, q, 
     commands = list()
     ksamp = sortbysize(samples)
     proc_files = os.listdir(path_base + folder + "/results_star/")
-    myout.write("len(ksamp)) = " + str(len(ksamp)) + "\n")
     for sample in ksamp:
-        in_file = path_base + folder + "/results_star/" + sample + "_Aligned.out.sam"
-        if sample + "_Aligned.out.sam" in proc_files:
-            myout.write("Sample_Aligned.out.sam is in proc_files.\nmode = " + mode + "\n")
+        in_file = path_base + folder + "/results_star/" + sample + "_Aligned.out.bam"
+        if sample + "_Aligned.out.bam" in proc_files:
             outputf= path_base + folder + "/results_htseq-" + mode + "/" + sample + ".tab"
             if mode == "gene":
                 ld1 = config.path_htseq + strand + " -m " + countmode  + " -q " + in_file + " " + path_annotation
-                myout.write("ldl = " + ld1 + "\n")
             else:
-                myout.write("in else clause.\n")
                 ld1 = config.path_htseq + strand + " -m " + countmode  + " -i exon_id -q " + in_file + " " + path_annotation
             call = ld1 + " > " + outputf
-            myout.write("Call = " + call + "\n")
             commands.append(call  + sample_checker.replace("#FOLDER", path_base + folder + "/" + output).replace("#SAMPLE", sample))
         else:
             print "Warning: [HTseq-" + mode + "] STAR output file not found -> " + in_file
-    myout.write("Calling create_scripts. len(commands) = " + str(len(commands)) )
-    myout.write("Len(samples) = " + str(len(samples)))
-    myout.close()
     create_scripts(len(samples), commands, path_base, folder, output)
     return submit_job_super("htseq-" + mode, path_base + folder, wt, str(nproc), q, len(samples), bsub_suffix, len(samples), timestamp)
 

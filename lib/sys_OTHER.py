@@ -45,7 +45,6 @@ def job_status(path):
     f = open(SLURMCTLD_FILE, 'r')
     for i in f:
         i = i.strip("\n")
-        print path
         if i.endswith(path + " WEXITSTATUS 1"):
             status = "error"
             break
