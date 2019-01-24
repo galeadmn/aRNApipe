@@ -325,9 +325,9 @@ def htseq(timestamp, path_base, folder, samples, path_annotation, nproc, wt, q, 
         if sample + "_Aligned.out.bam" in proc_files:
             outputf= path_base + folder + "/results_htseq-" + mode + "/" + sample + ".tab"
             if mode == "gene":
-                ld1 = config.path_htseq + strand + " -m " + countmode  + " -q " + in_file + " " + path_annotation
+                ld1 = config.path_htseq + strand + " -f bam -m " + countmode  + " -q " + in_file + " " + path_annotation
             else:
-                ld1 = config.path_htseq + strand + " -m " + countmode  + " -i exon_id -q " + in_file + " " + path_annotation
+                ld1 = config.path_htseq + strand + " -f bam -m " + countmode  + " -i exon_id -q " + in_file + " " + path_annotation
             call = ld1 + " > " + outputf
             commands.append(call  + sample_checker.replace("#FOLDER", path_base + folder + "/" + output).replace("#SAMPLE", sample))
         else:
