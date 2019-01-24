@@ -7,5 +7,5 @@ samtools view -@ 6 -bS OUTPUT_DIR/SAMPLE_NAME_Aligned.out.sam | samtools sort -l
 
 #Cleanup the temporary files
 rm -f OUTPUT_DIR/SAMPLE_NAME_Aligned.out.sam
-rm -f  OUTPUT_DIR/*.tmp.*.bam
+rm -f  OUTPUT_DIR/SAMPLE_NAME_Aligned.out.bam.tmp.*.bam
 
