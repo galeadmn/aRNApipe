@@ -46,6 +46,7 @@ except:
     print "Unexpected error generating stats of TRIMGALORE."
 # STAR
 try:
+    spider_stats.summary_star(path + "/results_star/")
     spider_stats.stats_star(path + "/results_star/", samples_ordered)  # GENERATES STATISTICS, COUNTS, RPKM AND ANNOTATION MATRICES
 except Exception as ex:
     print traceback.format_exc()
@@ -164,9 +165,12 @@ try:
     if config.has_key("star"):
         print "> Generating webpage with STAR statistics..."
         print "  - " + path + "/HTML/star.html"
-        html_table = html.print_table_default(path + "/outputs/star_unstranded_stats.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
-        data = html.bar_getdata (path + "/outputs/star_unstranded_stats.txt",0,range(1,6),[])
-        html.build_from_template("STAR", project, data, html_table, "", path+"/HTML/star.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_STAR.html", lmenu)
+        #html_table = html.print_table_default(path + "/outputs/star_unstranded_stats.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
+        #data = html.bar_getdata (path + "/outputs/star_unstranded_stats.txt",0,range(1,6),[])
+        #html.build_from_template("STAR", project, data, html_table, "", path+"/HTML/star.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_STAR.html", lmenu)
+        html_table = html.print_table_default(path + "/outputs/star_summary.txt", -1, []) # PROVIDES HTML TABLE WITH HPC STATS
+        data = html.bar_getdata (path + "/outputs/star_summary.txt",0,range(1,8),[])
+        html.build_from_template("STAR", project, data, html_table, "", path+"/HTML/star.html", os.path.dirname(sys.argv[0]) + "/template/TEMPLATE_GALE_STAR.html", lmenu)
 except Exception as ex:
     print traceback.format_exc()
     template = "An exception of type {0} occurred. Arguments:\n{1!r}"

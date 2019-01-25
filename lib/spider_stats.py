@@ -330,6 +330,13 @@ def stats_log(path):
     out.close()
     return 1
 
+def summary_star(path):
+    print "> Recovering stats from final STAR logs: " + path
+    if not os.path.exists(path):
+        print path + " does not exist!"
+        return 1
+    os.system("/share/code/lib/star_summary.sh " + path + " " + path.replace("/results_star/", "/outputs/star_summary.txt"))
+
 def stats_star(path, samples):
     print "> Recovering stats from STAR logs: " + path
     if not os.path.exists(path):
