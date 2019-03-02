@@ -86,7 +86,7 @@ def get_pid(path, secs):
 
 
 #FCF: Done, execpt opts needs to be written
-def submit_job(wt, n, slurm_partition, output_log, job_name, path2script, script, pt, bsub_suffix):
+def submit_job(wt, n, slurm_partition, output_log, job_name, path2script, script, pt):
     ########################################################################
     ## Submits a job script to cluster
     ########################################################################

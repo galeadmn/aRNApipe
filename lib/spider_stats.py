@@ -1,8 +1,44 @@
 import os
 import config
+import re
 
 head_star_log = ["Sample", "Links","Started job","Started mapping","Finished","Mapping speed [Mr/h]","Input reads [n]","Input read length (mean)","Uniquely mapped [n]","Uniquely mapped [%]","Mapped length","Splices [n]","Splices annotated [n]","Splices GT/AG [n]","Splices: GC/AG [n]","Splices: AT/AC [n]","Splices: Non-canonical [n]","Mismatch rate per base [%]","Deletion rate per base [%]","Deletion average length","Insertion rate per base [%]","Insertion average length","Multimapping reads [n]","Multimapping reads [%]","Multimapping reads (+) [n]","Multimapping reads (+) [%]","Unmapped reads: too many mismatches [%]","Unmapped reads: too short [%]","Unmapped reads: other [%]"]
 
+
+
+def stats_bowtie2(path):
+    column_names = ["Overall alignment rate", "aligned concordantly 0 times", "aligned concordantly exactly once", "aligned concordanly more than once"]
+    key_terms = ["overall alignment rate", "aligned concordantly 0 times", "aligned concordantly exactly 1 time", "aligned concordantly >1 times"]
+    # Get the names of the fastq files
+    f = open(path + "/samples.list", 'r')
+    f.readline()
+    samples = []
+    for line in f:
+        line = line.strip().split("\t")
+        if not line[0] in samples:
+            samples.append(line[0])
+    f.close()
+    # samples is now a tuple containing sample names 
+   
+    # Write the stats file
+    outfile = open(path + "/outputs/stats_bowtie2.txt", 'w')
+    print >> outfile, "sample_id\t" + "\t".join(column_names)
+    for sample in samples:
+        fpath = path + "/results_bowtie2/" + sample + ".RNA_removal.report.txt"
+        if os.path.exists(fpath):
+             f = open(fpath, 'r')
+             line = f.readline()
+             no_alignment = "\t" +line.strip("\n").split(key_terms[1])[0].lstrip()
+             line = f.readline()
+             exactly_once = "\t" + line.strip("\n").split(key_terms[2])[0].lstrip()
+             line = f.readline()
+             more_than_1 = "\t" + line.strip("\n").split(key_terms[3])[0].lstrip()
+             line = f.readline()  # Throw away this line
+             line = f.readline()
+             overall = "\t" + line.strip("\n").split(key_terms[0])[0].lstrip().replace(key_terms[0],"")
+             print >> outfile, sample + overall + no_alignment + exactly_once + more_than_1
+             f.close
+    outfile.close()
 
 def stats_trimgalore(path):
     fields2 = ["Total reads processed:","Reads with adapters:","Reads written (passing filters):","Total basepairs processed:","Quality-trimmed:","Total written (filtered):"]
@@ -19,6 +55,9 @@ def stats_trimgalore(path):
         if len(i) > 1:
             samples[i[0]] = [i[j].split("/")[-1] for j in idx]
     f.close()
+    # samples is now a dictionary with key of sample name and value an array of the fastq file names
+
+    # Write the stats file
     out = open(path + "/outputs/stats_trim.txt", 'w')
     print >> out, "sample_id\t" + "\t".join(fnames2)
     out2 = open(path + "/outputs/stats_trim_plot.txt", 'w')
@@ -68,6 +107,7 @@ def stats_trimgalore(path):
             print >> out, sample + g1
             print >> out2, sample + plt1
     out.close()
+    out2.close()
 
 
 def read_star_log(datafile, sample):
@@ -141,6 +181,9 @@ def stats_fastq(path,samples,config):
                 f = f.split("/")
                 f = f[len(f)-1]
                 # f now contains the name of the fastq file without the directory path
+                if config.has_key("bowtie2"):
+                     f = f.replace("_R1_001","_noRNA_R1_001")
+                     f = f.replace("_R2_001","_noRNA_R2_001")
                 if f.replace(".fastq","").replace(".gz","")+"_fastqc" in files:
                     link = "../results_fastqc/"+f.replace(".fastq","").replace(".gz","")+"_fastqc/fastqc_report.html"
                     link = '<a href="LINK" target="_blank">Results</a>'.replace("LINK",link)
@@ -245,7 +288,6 @@ def get_annotation(feature, path):
     path = aRNApipe_path + genome + "/genesets.feature.txt".replace("feature", feature).strip("\r")
     if not os.path.exists(path):
         exit("Annotation file not found")
-    print "Opening file " + path
     f = open(path, 'r')
     h = f.readline().strip("\n").strip("\r").split("\t")
     k = 0
@@ -292,9 +334,8 @@ def stats_log(path):
     # in a table format on an ouptut file
     order = ["success", "time_start", "time_results", "cpu_time", "max_memo", "ave_memo", "max_swap", "link"]
     Lorder= ["Success", "Started", "Ended", "CPU time", "Memory (max) [MB]", "Memory (mean) [MB]", "Swap (max) [MB]", "Link"]
-    progs = ["trimgalore", "fastqc", "kallisto", "star", "star-fusion", "picard",
-             "htseq-gene", "htseq-exon", "sam2sortbam", "picard_IS", "varscan", "gatk", "jsplice"]
-    print "> Recovering LSF stats from: " + path
+    progs = ["trimgalore", "fastqc", "star", "bowtie2" 
+             "htseq-gene", "htseq-exon", "sam2sortbam"]
     L = os.listdir(path)
     logs = dict()
     for i in L:
@@ -302,7 +343,6 @@ def stats_log(path):
             j = i.replace(".log","").replace('picard_IS', 'picard-IS').split("_")
             if (len(j) == 4):
                 date, time, prog, proc = j
-                prog = 'picard_IS' if prog == 'picard-IS' else prog
                 if not logs.has_key(date + "_" + time):
                     logs[date + "_" + time] = dict()
                 if not logs[date + "_" + time].has_key(prog):
@@ -337,7 +377,11 @@ def summary_star(path):
         return 1
     os.system("/share/code/lib/star_summary.sh " + path + " " + path.replace("/results_star/", "/outputs/star_summary.txt"))
 
-def stats_star(path, samples):
+def stats_star(path, samples, btw=False):
+    # If RNA was removed, the sample name should have a _noRNA suffix
+    suffix = ""
+    if btw:
+        suffix = "_noRNA"
     print "> Recovering stats from STAR logs: " + path
     if not os.path.exists(path):
         print path + " does not exist!"
@@ -346,9 +390,11 @@ def stats_star(path, samples):
     out = open(path.replace("/results_star/", "/outputs/star_stats_log.txt") , "w")
     print >> out, "\t".join(head_star_log)
     for sample in samples:
-        if os.path.exists(path + "/" + sample + "_Log.final.out"):
-            n = read_star_log(path + "/" + sample + "_Log.final.out", sample)
+        if os.path.exists(path + "/" + sample + suffix + "_Log.final.out"):
+            n = read_star_log(path + "/" + sample + suffix + "_Log.final.out", sample)
             print >> out, "\t".join(n)
+        else:
+            print "Missing file: " + path + "/" + sample + suffix + "_Log.final.out"
     out.close()
     print "> Recovering stats from STAR counts and building count matrices: " + path
     M = ["unstranded", "stranded", "stranded-reverse"]
@@ -358,12 +404,17 @@ def stats_star(path, samples):
     S = [{},{},{}]
     ng = list()
     na = list()
+    print "Number of samples = " + str(len(samples))
     for sample in samples:
-        if sample + "_ReadsPerGene.out.tab" in g:
+        if sample + suffix + "_ReadsPerGene.out.tab" in g:
             for i in range(3):
                 N[i][sample] = []
                 S[i][sample] = []
-            f = open(path + "/" + sample  + "_ReadsPerGene.out.tab", 'r')
+            # print "OPENING FILE FOR STAR INPUTS:\n" + path + "/" + sample + suffix  + "_ReadsPerGene.out.tab"
+            if os.path.exists:
+                f = open(path + "/" + sample + suffix  + "_ReadsPerGene.out.tab", 'r')
+            else:
+                print "Missing file: " + path + "/" + sample + suffix  + "_ReadsPerGene.out.tab"
             # header stats
             naa = list()
             for i in range(4):
@@ -409,7 +460,7 @@ def stats_star(path, samples):
         for sample in samples:
             if S[i].has_key(sample):
                 if len(S[i][sample]) > 0:
-                    print >> out, sample + "\t" + "\t".join(S[i][sample]) + "\t" + str(MT[sample]) + "\t" +  '<a href="../results_star/'+sample+'_ReadsPerGene.out.tab" target="_blank">+</a>'
+                    print >> out, sample + "\t" + "\t".join(S[i][sample]) + "\t" + str(MT[sample]) + "\t" +  '<a href="../results_star/"+sample+suffix+"_ReadsPerGene.out.tab" target="_blank">+</a>'
                 else:
                     print >> out, sample + "\t" + "\t".join(["0" for k in range(len(na))]) + "\t0\t"
             else:

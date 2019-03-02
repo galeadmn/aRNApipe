@@ -3,6 +3,7 @@ import os
 import config
 import time
 import programs
+import traceback
 
 if config.mode == "LSF":
     import sys_LSF as manager
@@ -117,7 +118,7 @@ def project_kill(path_base, folder):
 
 
 #############################################################################
-## PARSES DE CONFIGURATION FILE
+## PARSE CONFIGURATION FILE
 #############################################################################
 def config_file(config, path_base, folder, paths):
     # config: path to configuration file
@@ -218,7 +219,9 @@ def get_samples(path_base, folder, samplefile, no_check=False):
                         errors["ID duplication errors"].append(line_list[idx[0]])
                     else:
                         try:
-                            if not no_check:
+                            if no_check:
+                                samples[line_list[idx[0]]] = [line_list[idx[1]], line_list[idx[2]], 0, 0]
+                            else:
                                 for ifile in range(1,3):
                                     f_temp = open(line_list[idx[ifile]], 'r')
                                     f_temp.close()
@@ -232,9 +235,9 @@ def get_samples(path_base, folder, samplefile, no_check=False):
                                 #   4. Size of second read file in bytes
 				# QUALITY CONTROL GOES HERE
                                 samples[line_list[idx[0]]] = [line_list[idx[1]], line_list[idx[2]], os.stat(line_list[idx[1]]).st_size, os.stat(line_list[idx[2]]).st_size]
-                            else:
-                                samples[line_list[idx[0]]] = [line_list[idx[1]], line_list[idx[2]], 0, 0]
-                        except:
+                        except Exception as ex:
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
                             errors["Missing input files"]
                 else:
                     exit("Error: Input sample files must be '.fastq' or '.fastq.gz'")

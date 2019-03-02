@@ -49,7 +49,7 @@ def get_pid(path, secs):
     return 0
 
 
-def submit_job(wt, n, q, output_log, jid, path2script, script, pt, bsub_suffix):
+def submit_job(wt, n, q, output_log, jid, path2script, script, pt):
     ########################################################################
     ## Submits a job script to CLUSTER
     ########################################################################
@@ -76,7 +76,7 @@ def submit_job(wt, n, q, output_log, jid, path2script, script, pt, bsub_suffix):
     uds = str(p.pid)
     p = scan_process(p, 10, output_log)
     if p != 0:
-        exit("Error executing: " + path2script)
+        exit("Error executing: " + str(path2script))
     return uds
 
 

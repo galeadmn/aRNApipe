@@ -155,7 +155,7 @@ elif opt.m in ["update", "new"]:
         os.mkdir(complete_path + "/temp")
     ce = vcrparser.change_environment(config.environment)
     command_submitted = "python " + path_aRNApipe + "/lib/wr_aRNApipe.py" + vcr_args + " >> " + complete_path + "/logs/aRNApipe.log"
-    job_id = manager.submit_job(opt.wt, "1", "Pipeline", complete_path + "/logs/aRNApipe_cluster_" + timestamp + ".log", opt.folder, command_submitted, 0, complete_path, "")
+    job_id = manager.submit_job(opt.wt, "1", "Pipeline", complete_path + "/logs/aRNApipe_cluster_" + timestamp + ".log", opt.folder, command_submitted, 0, complete_path)
     print "Main process submitted (jid=" + job_id + ")"
     out = open(complete_path + "/pid.txt", 'w')
     print >> out, "aRNApipe\t" + job_id + "\t" + timestamp

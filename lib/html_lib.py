@@ -1,19 +1,13 @@
 import shutil
 import os
 
-modules = ["trimgalore", "fastqc", "kallisto", "star", "star-fusion", "picard", "picard_IS", "htseq-gene", "htseq-exon", "varscan", "gatk", 'jsplice']
+modules = ["trimgalore", "bowtie2", "fastqc", "star", "htseq-gene", "htseq-exon"]
 module_names = {"trimgalore":"",
+                "bowtie2":"",
                 "fastqc":"",
-                "kallisto":"",
                 "star":"",
-                "star-fusion":"",
-                "picard":"",
-                "picard_IS":"",
                 "htseq-gene":"",
-                "htseq-exon":"",
-                "varscan":"",
-                "jsplice":"",
-                "gatk":""}
+                "htseq-exon":""}
 
 
 def get_menu(config, ns):
@@ -29,53 +23,35 @@ def get_menu(config, ns):
         menu.append('<h1>Raw QC:</h1>')
     if enabled.has_key("trimgalore"):
         menu.append('<h2><a #highlight="" href="./trim.html">- TrimGalore/Cutadapt</a></h2>')
+    if enabled.has_key("bowtie2"):
+        menu.append('<h2><a #highlight="" href="./bowtie2.html">- Bowtie2</a></h2>')
     if enabled.has_key("fastqc"):
         menu.append('<h2><a #highlight="" href="./fastqc.html">- FastQC</a></h2>')
     if enabled.has_key("star") or enabled.has_key("picard") or enabled.has_key("htseq-gene") or enabled.has_key("htseq-exon"):
         menu.append('<h1>Alignment QC:</h1>')
-    if enabled.has_key("picard"):
-        menu.append('<h2><a #highlight="" href="./picard.html">- Picard</a></h2>')
-    if enabled.has_key("picard_IS"):
-        menu.append('<h2><a #highlight="" href="./picard-is.html">- Picard Insert Size</a></h2>')
     if enabled.has_key("star"):
         menu.append('<h2><a #highlight="" href="./star.html">- STAR</a></h2>')
-    if enabled.has_key("kallisto"):
-        menu.append('<h2><a #highlight="" href="./kallisto.html">- KALLISTO</a></h2>')
     if enabled.has_key("htseq-gene"):
         menu.append('<h2><a #highlight="" href="./htseq-gene.html">- HTseq-Gene</a></h2>')
     if enabled.has_key("htseq-exon"):
         menu.append('<h2><a #highlight="" href="./htseq-exon.html">- HTseq-Exon</a></h2>')
     if ns > 1:
-        if enabled.has_key("star") or enabled.has_key("htseq-gene") or enabled.has_key("htseq-exon") or enabled.has_key("kallisto"):
+        if enabled.has_key("star") or enabled.has_key("htseq-gene") or enabled.has_key("htseq-exon"):
             menu.append('<h1>Count statistics:</h1>')
             menu.append('<h2><a #highlight="" href="./downloads.html">- DOWNLOADS</a></h2>')
         if enabled.has_key("star"):
             menu.append('<h2><a #highlight="" href="./star2.html">- STAR</a></h2>')
-        if enabled.has_key("kallisto"):
-            menu.append('<h2><a #highlight="" href="./kallisto2.html">- KALLISTO</a></h2>')
         if enabled.has_key("htseq-gene"):
             menu.append('<h2><a  href="./htseq-gene2.html">- HTseq-Gene</a></h2>')
         if enabled.has_key("htseq-exon"):
             menu.append('<h2><a #highlight="" href="./htseq-exon2.html">- HTseq-Exon</a></h2>')
-    if enabled.has_key("gatk") or enabled.has_key("varscan"):
-        menu.append('<h1>Variant calling:</h1>')
-    if enabled.has_key("varscan"):
-        menu.append('<h2><a #highlight="" href="./varscan.html">- VARSCAN</a></h2>')
-    if enabled.has_key("gatk"):
-        menu.append('<h2><a #highlight="" href="./gatk.html">- GATK</a></h2>')
-    if enabled.has_key("star-fusion"):
-        menu.append('<h1>Gene fusions:</h1>')
-        menu.append('<h2><a #highlight="" href="./star-fusion.html">- Star-Fusion</a></h2>')
-    if enabled.has_key("jsplice"):
-        menu.append('<h1>Alternative splicing:</h1>')
-        menu.append('<h2><a #highlight="" href="./jsplice.html">- jSplice</a></h2>')
     menu = "\n".join(menu)
     return menu
 
 def print_samples(path,config):
-    analysis = ['trimgalore', 'fastqc', 'kallisto', 'star', 'star-fusion', 'picard', "htseq-gene", "htseq-exon", "picard_IS", "varscan", 'gatk', 'jsplice']
-    sta= {"trimgalore":"TrimGalore", "fastqc":"FastQC","star":"STAR","star-fusion":"STAR-Fusion","picard":"PicardQC","kallisto":"Kallisto","htseq-gene":"HTseq-gene",
-          "htseq-exon":"HTseq-exon", "picard_IS":"Picard-InsertSize", "varscan":"VARSCAN", "gatk":"GATK", "jsplice":"jSplice"}
+    analysis = ['trimgalore', 'bowtie2', 'fastqc', 'star', "htseq-gene", "htseq-exon"]
+    sta= {"trimgalore":"TrimGalore", "bowtie2":"Bowtie2", "fastqc":"FastQC","star":"STAR", "htseq-gene":"HTseq-gene",
+          "htseq-exon":"HTseq-exon"}
     # SAMPLES LIST
     samples = dict()
     f = open(path + "/samples.list",'r')
@@ -114,6 +90,19 @@ def print_samples(path,config):
                     else:
                         res.append("FAIL")
                     results["trimgalore"][x] = " / ".join(res)
+            if i == "bowtie2":
+                for x, y in sorted(samples.iteritems()):
+                    res = []
+                    if sok.has_key(x):
+                        filess = y
+                        for f in filess:
+                            f = f.split("/")[-1]
+                            link = "../results_bowtie2/" + f + "_bowtie2_report.txt"
+                            link = '<a href="LINK" target="_blank">OK</a>'.replace("LINK", link)
+                            res.append(link)
+                    else:
+                        res.append("FAIL")
+                    results["bowtie2"][x] = " / ".join(res)
             elif i=="fastqc":
                 for x, y in sorted(samples.iteritems()):
                     res    = []
@@ -145,64 +134,6 @@ def print_samples(path,config):
                         res.append("COUNTS-FAIL")
                         res.append("COUNTS-FAIL")
                     results["star"][x] = " / ".join(res)
-            elif i=="kallisto":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if sok.has_key(x):
-                        link = "../results_kallisto/" + x + "/abundance.tsv"
-                        link = '<a href="LINK" target="_blank">OK</a>'.replace("LINK", link)
-                        res.append(link)
-                    else:
-                        res.append("FAIL")
-                    results["kallisto"][x] = " / ".join(res)
-            elif i=="star-fusion":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if sok.has_key(x):
-                        link = "../results_star-fusion/" + x + "/star-fusion.fusion_candidates.final.abridged"
-                        link = '<a href="LINK" target="_blank">OK</a>'.replace("LINK", link)
-                        res.append(link)
-                    else:
-                        res.append("FAIL")
-                    results["star-fusion"][x] = " / ".join(res)
-            elif i=="picard_IS":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if sok.has_key(x) and os.path.exists(path + '/results_picard_IS/' + x + '.txt'):
-                        link = "../results_picard_IS/" + x + ".txt"
-                        link = '<a href="LINK" target="_blank">OK</a>'.replace("LINK", link)
-                        res.append(link)
-                    else:
-                        res.append("FAIL")
-                    results["picard_IS"][x] = " / ".join(res)
-            elif i=="jsplice":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if os.path.exists(path + '/results_jsplice/jSplice_results.html'):
-                        link = '../results_jsplice/jSplice_results.html'
-                        link = '<a href="LINK" target="_blank">OK</a>'.replace("LINK", link)
-                        res.append(link)
-                    else:
-                        res.append("FAIL")
-                    results["jsplice"][x] = " / ".join(res)
-            elif i=="picard":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if sok.has_key(x):
-                        link = "../results_picard/" + x + ".general.qc"
-                        link = '<a href="LINK" target="_blank">GENERAL-OK</a>'.replace("LINK", link)
-                        res.append(link)
-                        link = "../results_picard/" + x + ".protein_coding.qc"
-                        link = '<a href="LINK" target="_blank">PC-OK</a>'.replace("LINK", link)
-                        res.append(link)
-                        link = "../results_picard/" + x + ".ribosomal.qc"
-                        link = '<a href="LINK" target="_blank">RB-OK</a>'.replace("LINK", link)
-                        res.append(link)
-                    else:
-                        res.append("GENERAL-FAIL")
-                        res.append("PC-FAIL")
-                        res.append("RB-FAIL")
-                    results["picard"][x] = " / ".join(res)
             elif i=="htseq-gene":
                 for x, y in sorted(samples.iteritems()):
                     res = []
@@ -223,28 +154,6 @@ def print_samples(path,config):
                     else:
                         res.append("FAIL")
                     results["htseq-exon"][x] = " / ".join(res)
-            elif i=="varscan":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if sok.has_key(x):
-                        link = "../results_varscan/" + x + ".vcf"
-                        link = '<a href="LINK" target="_blank">VCF</a>'.replace("LINK", link)
-                        res.append(link)
-                    else:
-                        res.append("FAIL")
-                    results["varscan"][x] = " / ".join(res)
-            elif i=="gatk":
-                for x, y in sorted(samples.iteritems()):
-                    res = []
-                    if sok.has_key(x):
-                        link1 = "../results_gatk/" + x + ".vcf"
-                        link1 = '<a href="LINK" target="_blank">VCF</a>'.replace("LINK", link1)
-                        link2 = "../results_gatk/" + x + ".filt.vcf"
-                        link2 = '<a href="LINK" target="_blank">VCF_FILT</a>'.replace("LINK", link2)
-                        res.append(link1 + "/" + link2)
-                    else:
-                        res.append("FAIL")
-                    results["gatk"][x] = " / ".join(res)
     n = "<th bgcolor='#A8A8A8'>Sample</th>"
     for i in hs[1:]:
         n = n + "<th bgcolor='#A8A8A8'> Size "+i+" (Gb)</th>"
@@ -343,156 +252,6 @@ def check_project(path):
     return project, path
 
 
-def stats_picard(path,samples,config):
-    n = os.listdir(path)
-    hh = "\t".join(["sample_id","mRNA-Coding", "mRNA-Ribosomal", "mRNA-Others","Intron","Intergenic","Unmapped","Med-CVcov","Med-5bias","Med-3bias","Med-5/3bias"])
-    if config.has_key("picard") and ("results_picard" in n):
-        files  = os.listdir(path+"/results_picard")
-        n      = [".general.qc",".protein_coding.qc",".ribosomal.qc"]
-        names  = ["Sample","BASES (N)","ALIGN (N)","ALIGN (%)","INTRON (N)","INTRON (%)",
-                  "INTERGEN (N)","INTERGEN (%)","MRNA (N)","MRNA (%)","Protein coding (%)",
-                  "Ribosomal (%)","Others (%)","Coding (%)","UTR (%)","MEDIAN CV COVERAGE","MEDIAN 5' BIAS","MEDIAN 3' BIAS","MEDIAN 5'-3' BIAS"]
-        g = ["MEDIAN_CV_COVERAGE","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS","MEDIAN_5PRIME_TO_3PRIME_BIAS"]
-        out = open(path + "/outputs/stats_picard.txt",'w')
-        table  = ['<tr><th align="center" colspan="2" bgcolor="#A8A8A8"></th><th align="center" colspan="2" bgcolor="#A8A8A8">ALIGNED BASES</th><th align="center" colspan="6" bgcolor="#A8A8A8">GENOME LOCATION</th><th align="center" colspan="3" bgcolor="#A8A8A8">MRNA TYPE</th><th align="center" colspan="2" bgcolor="#A8A8A8">MRNA LOCATION</th><th align="center" colspan="4" bgcolor="#A8A8A8">OTHERS</th></tr>']
-        header = ""
-        for i in names:
-            header = header+"<th bgcolor='#A8A8A8'>"+i+"</th>"
-        print >> out, hh
-        header = "<tr>"+header+"</tr>"
-        table.append(header)
-        for i in sorted(samples.keys()):
-            stats = [{},{},{}]
-            heads = list()
-            ex = 0
-            for k in range(3):
-                if i+n[k] in files:
-                    f = open(path+"/results_picard"+"/"+i+n[k],'r')
-                    nx = 0
-                    kdiff0 = 0
-                    for ii in f:
-                        if ii.startswith("PF_BASES"):
-                            head = ii.rstrip().split("\t")
-                            nx   = 1
-                            for kk in head:
-                                if not (kk in heads):
-                                    heads.append(kk)
-                        elif nx == 1:
-                            vals = ii.strip("\n").split("\t")
-                            for kk in range(len(head)):
-                                stats[k][head[kk]] = vals[kk]
-                                if (vals[kk] != "") and (vals[kk] != "?"):
-                                    if float(vals[kk]) > 0:
-                                        kdiff0 += 1
-                            nx = 0
-                    if kdiff0 == 0:
-                        ex = 1
-                        break
-                    f.close()
-                else:
-                    ex = 1
-                    break
-            if ex ==1:
-                tr = "<td bgcolor='#CC3300'>"+i+"</td>"
-                o = i
-                for ii in range(18):
-                    tr += "<td bgcolor='#CC3300'>NA</td>"
-                    o += "\tNA"
-                tr = "<tr>"+tr+"</tr>"
-                table.append(tr)
-                s = ["NA" for ii in range(10)]
-            else:
-                align  = int(stats[0]["PF_ALIGNED_BASES"])
-                cod  = int(stats[0]["CODING_BASES"])
-                utr  = int(stats[0]["UTR_BASES"])
-                intr = int(stats[0]["INTRONIC_BASES"])
-                inter = int(stats[0]["INTERGENIC_BASES"])
-                mrna = cod + utr
-                pc   = int(stats[1]["CODING_BASES"])+int(stats[1]["UTR_BASES"])
-                rb   = int(stats[2]["CODING_BASES"])+int(stats[2]["UTR_BASES"])
-                ot   = mrna - pc - rb
-                pc   = str(round(100*float(pc)/align,3))
-                rb   = str(round(100*float(rb)/align,3))
-                ot   = str(round(100*float(ot)/align,3))
-                tr = "<td bgcolor='#B8B8B8'>"+i+"</td>"
-                tr +="<td bgcolor='#00CC66'>"+stats[0]["PF_BASES"]+"</td>"
-                tr +="<td bgcolor='#00CC66'>"+str(align)+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+str(round(100*float(align)/float(stats[0]["PF_BASES"]),2))+"</td>"
-                tr +="<td bgcolor='#00CC66'>"+str(intr)+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+str(round(100*float(intr)/align,2))+"</td>"
-                tr +="<td bgcolor='#00CC66'>"+str(inter)+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+str(round(100*float(inter)/align,2))+"</td>"
-                tr +="<td bgcolor='#00CC66'>"+str(mrna)+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+str(round(100*float(mrna)/align,2))+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+pc+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+rb+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+ot+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+str(round(100*float(cod)/align,2))+"</td>"
-                tr +="<td bgcolor='#99CC66'>"+str(round(100*float(utr)/align,2))+"</td>"
-                o = i + "\t" + stats[0]["PF_BASES"] + "\t" + str(align) + "\t" + str(round(100*float(align)/float(stats[0]["PF_BASES"]),2)) + "\t" + str(intr) + "\t" + str(round(100*float(intr)/align,2)) + "\t" + str(inter) + "\t" + str(round(100*float(inter)/align,2)) + "\t" + str(mrna) + "\t" + str(round(100*float(mrna)/align,2)) + "\t" +pc+ "\t" +rb+ "\t" +ot+ "\t" +str(round(100*float(cod)/align,2))+ "\t" + str(round(100*float(utr)/align,2))
-                for ix in g:
-                    if stats[0][ix]!="?":
-                        tr +="<td bgcolor='#99CC66'>"+str(round(float(stats[0][ix]),3))+"</td>"
-                        o += "\t" + str(round(float(stats[0][ix]),3))
-                    else:
-                        tr +="<td bgcolor='#99CC66'>0</td>"
-                        o += "\t0"
-                tr = "<tr>"+tr+"</tr>"
-                table.append(tr)
-                o = o.split("\t")
-                st= 0
-                s = []
-                for ind in [10, 11, 12, 5, 7, 3]:
-                    s.append(str(round(float(o[ind]) * float(o[2])/float(o[1]),3)))
-                    if ind != 3:
-                        st += float(o[ind]) * float(o[2])/float(o[1])
-                for ind in [15,16,17,18]:
-                    if o[ind] != "0":
-                        s.append(str(round(float(o[ind]) * 100,3)))
-                    else:
-                        s.append("0")
-                s[5] = str(round(100 - st,3))
-            print >> out, i + "\t" + "\t".join(s)
-        out.close()
-        return "<table>"+"\n".join(table)+"</table>"
-    else:
-        return ""
-
-
-def stats_picard_2(path,samples,config):
-    n = os.listdir(path)
-    H= ['sample_id','MEDIAN_INSERT_SIZE','MEDIAN_ABSOLUTE_DEVIATION','MIN_INSERT_SIZE',
-                    'MAX_INSERT_SIZE','MEAN_INSERT_SIZE','STANDARD_DEVIATION','READ_PAIRS', 'LINK_TXT', 'LINK_PDF']
-    hh = "\t".join(H)
-    if config.has_key("picard_IS") and ("results_picard_IS" in n):
-        files  = os.listdir(path+"/results_picard_IS")
-        out = open(path + "/outputs/stats_picard2.txt",'w')
-        print >> out, hh
-        for i in sorted(samples.keys()):
-            if i + ".txt" in files:
-                f = open(path+"/results_picard_IS"+"/"+i+".txt",'r')
-                k = 0
-                while (1):
-                    h = f.readline()
-                    if h.startswith("MEDIAN_INSERT_SIZE"):
-                        j = f.readline().strip("\n").split("\t")
-                        h = h.strip("\n").split("\t")
-                        break
-                    k += 1
-                    if k > 10 or len(h) == 0:
-                        j = ['NA' for i in range(7)]
-                        break
-                J = []
-                for k in range(len(h)):
-                    if h[k] in H:
-                        J.append(j[k])
-                print >> out, "\t".join([i] + J + ['<a href="../results_picard_IS/' + i + '.txt" target="_blank">+</a>', '<a href="../results_picard_IS/' + i + '.pdf" target="_blank">+</a>'])
-                f.close()
-            else:
-                print >> out, "\t".join([i] + ['NA' for i in range(9)])
-        out.close()
-    return 1
-
 def skeleton(path, path2html):
     print "> Building HTML and OUTPUT folders skeletons..."
     print "  - Path: " + path
@@ -520,44 +279,6 @@ def skeleton(path, path2html):
     shutil.copy(path2html + "/html/serial.js", path + "/HTML/html/serial.js")
     shutil.copy(path2html + "/html/xy.js", path + "/HTML/html/xy.js")
     os.system("cp -r " + path2html + "/html/images " + path + "/HTML/html/")
-
-
-# def check_samples(path):
-#     # Parses the samples file
-#     print "> Parsing samples file..."
-#     try:
-#         f = open(path + "/samples.list", 'r')
-#         i = f.readline().strip("\n").split("\t")
-#         index = [-1,-1,-1]
-#         if ("FASTQ_1" in i) and ("FASTQ_2" in i):
-#             k = "paired-end"
-#             for r in range(len(i)):
-#                 if i[r]=="SampleID":
-#                     index[0] = r
-#                 if i[r]=="FASTQ_1":
-#                     index[1] = r
-#                 if i[r]=="FASTQ_2":
-#                     index[2] = r
-#         else:
-#             k = "single-end"
-#             for r in range(len(i)):
-#                 if i[r]=="SampleID":
-#                     index[0] = r
-#                 if i[r]=="FASTQ":
-#                     index[1] = r
-#         samples = dict()
-#         for i in f:
-#             i = i.strip("\n").split("\t")
-#             if len(i)>1:
-#                 if k=="paired-end":
-#                     samples[i[index[0]]] = [[i[index[1]],i[index[2]]],["Type",k]]
-#                 else:
-#                     samples[i[index[0]]] = [[i[index[1]]],["Type",k]]
-#         f.close()
-#         return samples
-#     except:
-#         exit("Error checking samples file: " + path + "/samples.list")
-
 
 def build_amcharts(input, output, prog, pname, path, html_table, project, lmenu):
     out = open(output, 'w')
@@ -591,7 +312,7 @@ def check_config(path):
     # Parses the configuration file
     print "> Parsing configuration file..."
     try:
-        z = ["trimgalore", "fastqc", "star", "star-fusion", "picard", "htseq-gene", "htseq-exon", "kallisto", "picard_IS", "varscan", "gatk", 'jsplice']
+        z = ["trimgalore", "bowtie2", "fastqc", "star", "htseq-gene", "htseq-exon"]
         f = open(path + "/config.txt", 'r')
         analysis = dict()
         analysis["cluster"] = dict()
@@ -608,9 +329,6 @@ def check_config(path):
                     elif i[0] == "star_args_own":
                         if analysis["programs"]["star_args"] == "own":
                             analysis["programs"]["star_args"] = i[1]
-                    elif i[0] == "starfusion_own":
-                        if analysis["programs"]["starfusion"] == "own":
-                            analysis["programs"]["starfusion"] = i[1]
                     elif i[0] == "genome_build":
                         analysis[i[0]] = i[1]
                     else:

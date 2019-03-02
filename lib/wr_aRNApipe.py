@@ -46,7 +46,6 @@ shutil.copy(opt.config, opt.config.replace("config.txt","logs/" + timestamp + "_
 config.path_genome = config.path_genome.replace("#LABEL", var["genome_build"])
 if not os.path.exists(config.path_genome):
     exit("path_genome not found. Genome build " + var["genome_build"] + " missing or incomplete.")
-config.path_index = config.path_index.replace("#LABEL", var["genome_build"])
 config.path_annotation = config.path_annotation.replace("#LABEL", var["genome_build"])
 print config.path_annotation
 if not os.path.exists(config.path_annotation):
@@ -68,6 +67,7 @@ print "  - Project folder:  " + folder
 print "  - Base path:       " + path_base
 print "  - Config file:     " + opt.config
 print "  - Genome build:    " + var["genome_build"]
+print "  - Bowtie2 index:   " + var["bowtie2_index"]
 print "  - Run mode:        " + opt.m
 print "  - Stranded RNA:    " + var["strandedness"]
 print "> CLUSTER VARIABLES:"
@@ -75,6 +75,7 @@ print "  - Queue:           " + var["q"]
 print "  - Walltime:        " + var["wt"]
 print "> ANALYSIS:"
 print "  - TrimGalore:      " + var["trimgalore"]
+print "  - Bowtie2:         " + var["bowtie2"]
 print "  - FastQC:          " + var["fastqc"]
 print "  - STAR:            " + var["star"]
 print "  - HTseq (gene):    " + var["htseq-gene"]
@@ -153,39 +154,44 @@ if int(var["star"].split("/")[0]) > 0:
 ## Starts analysis
 ##########################################################
 procs = list()
-tg = False
+bt2 = False
 ## Pre-alignment analysis
 if int(var["trimgalore"].split("/")[0]) > 0:
-    tg = True
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "trimgalore", opt.m)
     if len(samples_v) > 0:
         print "About to call trimgalore"
         job_id_tg, logs_tg = programs.trimgalore(timestamp, path_base, folder, samples_v, var["trimgalore"], var["wt"], var["q"], var["trimgal_args"])
         w = vcrparser.job_wait(job_id_tg, 20)
         procs.append(job_id_tg)
+if int(var["bowtie2"].split("/")[0]) > 0:
+    bt2 = True
+    samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "bowtie2", opt.m)
+    if len(samples_v) > 0:
+        print "About to call bowtie2"
+        job_id_btw, logs_qc = programs.bowtie2(timestamp, path_base, folder, samples_v, var["bowtie2_args"], var["bowtie2_index"], var["wt"], var["q"])
+        w = vcrparser.job_wait(job_id_btw, 20)
 if int(var["fastqc"].split("/")[0]) > 0:
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "fastqc", opt.m)
     if len(samples_v) > 0:
         print "About to call fastqc"
-        job_id_qc, logs_qc = programs.fastqc(timestamp, path_base, folder, samples_v, var["fastqc"], var["wt"], var["q"], tg)
+        job_id_qc, logs_qc = programs.fastqc(timestamp, path_base, folder, samples_v, var["wt"], var["q"], bt2)
         procs.append(logs_qc)
 if int(var["star"].split("/")[0]) > 0:
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "star", opt.m)
     if len(samples_v) > 0:
-        job_id_star, logs_star = programs.star(timestamp, path_base, folder, samples_v, var["star"], var["wt"], var["q"], config.path_genome, star_params, tg)
+        job_id_star, logs_star = programs.star(timestamp, path_base, folder, samples_v, var["wt"], var["q"], config.path_genome, star_params, bt2)
         w = vcrparser.job_wait(job_id_star, 20)
         procs.append(job_id_star)
 if int(var["htseq-gene"].split("/")[0]) > 0:
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "htseq-gene", opt.m)
     if len(samples_v) > 0:
-        job_id_htseqG, logs_htseqG = programs.htseq(timestamp, path_base, folder, samples_v, config.path_annotation, var["htseq-gene"], var["wt"], var["q"], "gene", var["strandedness"], var["htseq-gene-mode"])
+        job_id_htseqG, logs_htseqG = programs.htseq(timestamp, path_base, folder, samples_v, config.path_annotation, var["wt"], var["q"], "gene", var["strandedness"], var["htseq-gene-mode"], bt2)
         procs.append(logs_htseqG)
 if int(var["htseq-exon"].split("/")[0]) > 0:
     samples_v, stats = vcrparser.check_samples(samples, path_base, folder, "htseq-exon", opt.m)
     if len(samples_v) > 0:
         job_id_htseqE, logs_htseqE = programs.htseq(timestamp, path_base, folder, samples_v, config.path_annotation, var["htseq-exon"], var["wt"], var["q"], "exon", var["strandedness"],var["htseq-exon-mode"])
         procs.append(logs_htseqE)
-
 if len(procs) > 0:
     for proc in procs:
         w = vcrparser.job_wait(proc, 10)
