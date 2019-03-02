@@ -1,0 +1,32 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ANALYSIS
+%%              CPUs/nodes/memory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+trimgalore	5/NA/10
+bowtie2	5/NA/10
+fastqc	10/NA/10
+star	20/1/50
+htseq-gene	6/NA/10
+htseq-exon	0/NA/1
+sam2sortbam	0/NA/1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% GENOMIC REFERENCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+genome_build	Macaca_mulatta
+bowtie2_index	/vol01/genome/rRNA/bowtie2_index_human_mouse_rhesus_rhesusglobin/human_mouse_rhesusRNA_rhesusGlobins
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% HPC CONFIG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+wt	400:00
+q	normal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ADDITIONAL PROGRAM OPTIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+trimgal_args	
+bowtie2_args	-5 1 -3 24
+star2pass	yes
+star_args	own
+star_args_own	--clip5pNbases 1  --clip3pNbases 24 
+strandedness	yes
+htseq-gene-mode	union
+htseq-exon-mode	union
