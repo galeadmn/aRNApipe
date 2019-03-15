@@ -195,20 +195,33 @@ def config_file(path, fname):
 
 
 def print_table_default(datafile, index, select):
-    print datafile
+    row_data= []
+    csv_table = ""
+    if datafile[-16:] == "star_summary.txt":
+        processing_star = True
+    else:
+        processing_star = False
     palette = ["#00FA9A", "#AFEEEE", "#D8BFD8", "#DEB887", "#D3D3D3", "#EEE8AA"]
     if not os.path.exists(datafile):
         print "returning empty string"
         return ""
+    # Open the file for reading
     f = open(datafile, 'r')
+    # Read one line, spit into a list using tab character as separator
     h = f.readline().strip("\n").split("\t")
+    # if the list select is empty, assign it a new list containing numbers 0 to len(h)-1
     if len(select) == 0:
         select = range(len(h))
     n = ""
     for i in select:
         n = n + "<th align='center' bgcolor='#A8A8A8'>" + h[i] + "</th>"
+        if processing_star:
+            row_data.append(h[i])
     if index < 0:
         n = '<table id="DT" class="display"><thead><tr>' + n + '</tr></thead><tbody>'
+        if processing_star:
+            csv_table = ','.join(row_data[:-1]) + '\n'
+            row_data = []
     else:
         n = '<table><thead><tr>' + n + '</tr></thead><tbody>'
     M = dict()
@@ -223,6 +236,8 @@ def print_table_default(datafile, index, select):
                     r += 1
             for k in select:
                 j = i[k]
+                if processing_star:
+                    rowdata = row_data.append(j)
                 if (j == "-1") or (j.startswith("NA ") or j.endswith(" NA") or j == "NA"):
                     temp = temp + "<td align='center' bgcolor='#CC3300'>" + j + "</td>"
                 else:
@@ -231,7 +246,15 @@ def print_table_default(datafile, index, select):
                     else:
                         temp = temp + "<td align='center' bgcolor='" + M[i[index]] + "'>" + j + "</td>"
             n = n + "<tr>" + temp + "</tr>"
+            if processing_star:
+                csv_table = csv_table + ','.join(row_data[:-1]) + '\n' 
+                row_data = []
     n += "</tbody></table>"
+    f.close()
+    if processing_star:
+        outfile = open (datafile[:-16] + 'star_results.csv', 'w')
+        outfile.write(csv_table)
+        outfile.close()
     return n
 
 
@@ -337,80 +360,6 @@ def check_config(path):
         return analysis
     except:
         exit("Error checking configuration file: " + path + "/config.txt")
-
-
-# def print_config(config,path):
-#     table = list()
-#     table.append(["Analysis", "Processors", "Folder", "Timestamp",
-#                   "TStart","TEnd","Success","CPU-Time","MaxMemo",
-#                   "AveMemo","MaxSwap","Parameters"])
-#     for i in modules:
-#         if config.has_key(i):
-#             n = check_log_cluster(path, config[i][1])
-#             st = []
-#             if len(config[i][2]) > 0:
-#                 for v,w in config[i][2].iteritems():
-#                     st.append(v+": "+w)
-#             st = "<br>".join(st)
-#             for j in range(len(n)):
-#                 tt = [module_names[i]]+[config[i][0],"./"+config[i][1]]+n[j]+[st]
-#                 table.append(tt)
-#     n = ""
-#     for i in table[0]:
-#         n = n+"<th bgcolor='#A8A8A8'>"+i+"</th>"
-#     n = ["<tr>"+n+"</tr>"]
-#     for i in table[1:]:
-#         temp = ""
-#         for j in i:
-#             if "NA" in j:
-#                 temp = temp+"<td bgcolor='#CC3300'>"+j+"</td>"
-#             else:
-#                 temp = temp+"<td bgcolor='#00CC66'>"+j+"</td>"
-#         n.append("<tr>"+temp+"</tr>")
-#     return n
-
-
-# def check_log_cluster(path, val):
-#     t = os.listdir(path)
-#     if not (val in t):
-#         return ["NA","NA","NA","NA","NA","NA","NA"]
-#     t  = os.listdir(path + "/" + val)
-#     t2 = list()
-#     for i in t:
-#         if i.startswith("log_cluster_") and (("scheduler" in i) == False):
-#             if len(i.split("_")) >= 4 :
-#                 t2.append(i)
-#     if len(t2) == 0:
-#         return [["NA","NA","NA","NA","NA","NA","NA","NA"]]
-#     n = list()
-#     for jv in sorted(t2):
-#         f = open(path + "/" + val + "/" + jv,'r')
-#         ts = ""
-#         te = ""
-#         suc= "No"
-#         cpu_time = ""
-#         max_memo = ""
-#         ave_memo = ""
-#         max_swap = ""
-#         pid      = "_".join(jv.split("_")[2:4]).replace(".txt","")
-#         for i in f:
-#             if i.startswith("Started at"):
-#                 ts = i.rstrip().replace("Started at ","")
-#             if i.startswith("Results reported on"):
-#                 te = i.rstrip().replace("Results reported on ","")
-#             if i.startswith("Successfully completed."):
-#                 suc = "Yes"
-#             if "CPU time :" in i:
-#                 cpu_time = " ".join(i.rstrip().split()[3:5])
-#             if "Max Memory :" in i:
-#                 max_memo = " ".join(i.rstrip().split()[3:5])
-#             if "Average Memory :" in i:
-#                 ave_memo = " ".join(i.rstrip().split()[3:5])
-#             if "Max Swap :" in i:
-#                 max_swap = " ".join(i.rstrip().split()[3:5])
-#         f.close()
-#         n.append([pid,ts,te,suc,cpu_time,max_memo,ave_memo,max_swap])
-#     return n
 
 
 def bar_getdata (filename, head, cols_bar, cols_line):
