@@ -4,9 +4,6 @@
 <script type="text/javascript" language="javascript" src="./html/jquery-1.12.0.js"></script>
 <script type="text/javascript" language="javascript" src="./html/jquery.dataTables.min.js"></script>
 <script type="text/javascript" language="javascript" src="./html/dataTables.colReorder.min.js"></script>
-<script type="text/javascript" language="javascript" src="./html/amcharts.js"></script>
-<script type="text/javascript" language="javascript" src="./html/xy.js" type="text/javascript"></script>
-<script type="text/javascript" language="javascript" src="./html/serial.js" type="text/javascript"></script>
 <link rel="stylesheet" type="text/css" href="./html/lytebox.css">
 <link rel="stylesheet" type="text/css" href="./html/jquery.dataTables.min.css">
 <link rel="stylesheet" type="text/css" href="./html/style.css">
@@ -35,6 +32,7 @@
 <center>
 #TABLE
 </center>
+<button id="downloadButton" type="button" onclick="window.open('../outputs/star_results.csv')">Download CSV</button>
 <ul>
   <li>Reads: Number of input reads.</li>
   <li>Uniquely Mapped: Percentage of uniquely mapped reads.</li>
