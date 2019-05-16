@@ -7,8 +7,8 @@ head_star_log = ["Sample", "Links","Started job","Started mapping","Finished","M
 
 
 def stats_bowtie2(path):
-    column_names = ["Overall alignment rate", "aligned concordantly 0 times", "aligned concordantly exactly once", "aligned concordanly more than once"]
-    key_terms = ["overall alignment rate", "aligned concordantly 0 times", "aligned concordantly exactly 1 time", "aligned concordantly >1 times"]
+    column_names = ["Total reads", "Overall alignment rate", "aligned concordantly 0 times", "aligned concordantly exactly once", "aligned concordanly more than once"]
+    key_terms = ["reads; of these:", "overall alignment rate", "aligned concordantly 0 times", "aligned concordantly exactly 1 time", "aligned concordantly >1 times"]
     # Get the names of the fastq files
     f = open(path + "/samples.list", 'r')
     f.readline()
@@ -28,15 +28,17 @@ def stats_bowtie2(path):
         if os.path.exists(fpath):
              f = open(fpath, 'r')
              line = f.readline()
-             no_alignment = "\t" +line.strip("\n").split(key_terms[1])[0].lstrip()
+             total_reads = "\t" +line.strip("\n").split(key_terms[0])[0].lstrip()
              line = f.readline()
-             exactly_once = "\t" + line.strip("\n").split(key_terms[2])[0].lstrip()
+             no_alignment = "\t" +line.strip("\n").split(key_terms[2])[0].lstrip()
              line = f.readline()
-             more_than_1 = "\t" + line.strip("\n").split(key_terms[3])[0].lstrip()
+             exactly_once = "\t" + line.strip("\n").split(key_terms[3])[0].lstrip()
+             line = f.readline()
+             more_than_1 = "\t" + line.strip("\n").split(key_terms[4])[0].lstrip()
              line = f.readline()  # Throw away this line
              line = f.readline()
-             overall = "\t" + line.strip("\n").split(key_terms[0])[0].lstrip().replace(key_terms[0],"")
-             print >> outfile, sample + overall + no_alignment + exactly_once + more_than_1
+             overall = "\t" + line.strip("\n").split(key_terms[1])[0].lstrip().replace(key_terms[0],"")
+             print >> outfile, sample + total_reads + overall + no_alignment + exactly_once + more_than_1
              f.close
     outfile.close()
 
