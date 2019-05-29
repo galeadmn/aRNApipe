@@ -18,9 +18,9 @@ else:
     import sys_OTHER as manager
 
 sample_checker = ' && (echo "#SAMPLE" >> #FOLDER/samples_ok.txt) || (echo "$HOSTNAME #SAMPLE" >> #FOLDER/samples_ko.txt)'
-slurm_partiton = 'aRNA-Seq'
+slurm_partiton = os.getenv('SLURM_PARTITION', 'aRNA-Seq')
 
-def submit_job_super(pname, path, wt, q, nstar, timestamp):
+def submit_job_super(pname, ncpu, path, wt, q, nstar, timestamp):
     folder = path.split("/")[-1]
     if pname.startswith("htseq"):
         job_name = "hts" + (pname.split("-")[1][0]).upper()
@@ -32,7 +32,7 @@ def submit_job_super(pname, path, wt, q, nstar, timestamp):
     for i in range(nstar):
         logname = path + "/logs/" + pname + "_" + str(i) + ".log"
         logs.append(logname)
-        job_ids.append(str(manager.submit_job(wt, "1", slurm_partiton, logname, folder + "_" + job_name + "_" + str(i),
+        job_ids.append(str(manager.submit_job(wt, ncpu, slurm_partiton, logname, folder + "_" + job_name + "_" + str(i),
                               path + "/results_" + pname + "/script_" + str(i) + ".sh", 1, path)))
     job_ids = "|".join(job_ids)
     logs = "|".join(logs)
@@ -134,7 +134,7 @@ def trimgalore(timestamp, path_base, folder, samples, configuration, wt, q, extr
         call = call + sample_checker.replace("#FOLDER", output_folder).replace("#SAMPLE", sample) + "\n" + rename_tg_output(sample, files, path_base + folder)
         commands.append(call)
     create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("trimgalore", path_base + folder, wt, q, len(samples), timestamp)
+    return submit_job_super("trimgalore", 2, path_base + folder, wt, q, len(samples), timestamp)
 
 def bowtie2(timestamp, path_base, folder, samples, bowtie2_options, bowtie2_index, wt, q):
     output = "results_bowtie2"
@@ -171,7 +171,7 @@ def bowtie2(timestamp, path_base, folder, samples, bowtie2_options, bowtie2_inde
         command = command.replace("RNA_REMOVAL_REPORT", sample+".RNA_removal.report.txt")
         commands.append(command)
     create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("bowtie2", path_base + folder, wt, q, len(samples), timestamp)
+    return submit_job_super("bowtie2", 5, path_base + folder, wt, q, len(samples), timestamp)
  
 def fastqc(timestamp, path_base, folder, samples, wt, q, bt2):
     ########################################################################
@@ -206,7 +206,7 @@ def fastqc(timestamp, path_base, folder, samples, wt, q, bt2):
         call = config.path_fastqc + " --extract -q -o " + output_folder + " " + fnames
         commands.append(call + sample_checker.replace("#FOLDER", output_folder).replace("#SAMPLE", sample))
     create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("fastqc", path_base + folder, wt, q, len(samples), timestamp)
+    return submit_job_super("fastqc", 5, path_base + folder, wt, q, len(samples), timestamp)
 
 def star(timestamp, path_base, folder, samples, wt, q, path_genome, star_params, bt2):
     output = "results_star"
@@ -245,7 +245,7 @@ def star(timestamp, path_base, folder, samples, wt, q, path_genome, star_params,
         command = command.replace("BOWTIE2_SUFFIX", bowtie2_suffix)
         commands.append(command)
     create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("star", path_base + folder, wt, q, len(samples), timestamp)
+    return submit_job_super("star", 10, path_base + folder, wt, q, len(samples), timestamp)
 
 def htseq(timestamp, path_base, folder, samples, path_annotation, wt, q, mode, strand, countmode, bt2):
     output_dir = "results_htseq-" + mode
@@ -271,7 +271,7 @@ def htseq(timestamp, path_base, folder, samples, path_annotation, wt, q, mode, s
         else:
             print "Warning: [HTseq-" + mode + "] STAR output file not found -> " + in_file
     create_scripts(len(samples), commands, path_base, folder, output_dir)
-    return submit_job_super("htseq-" + mode, path_base + folder, wt, q, len(samples), timestamp)
+    return submit_job_super("htseq-" + mode, 5, path_base + folder, wt, q, len(samples), timestamp)
 
 
 def sam2sortbam(timestamp, path_base, folder, samples, wt, q):
@@ -291,4 +291,4 @@ def sam2sortbam(timestamp, path_base, folder, samples, wt, q):
         else:
             print "Warning: [SAM2SORTEDBAM] STAR output file not found -> " + in_file
     create_scripts(len(samples), commands, path_base, folder, output)
-    return submit_job_super("sam2sortbam", path_base + folder, wt, q, len(samples), timestamp)
+    return submit_job_super("sam2sortbam", 5, path_base + folder, wt, q, len(samples), timestamp)
